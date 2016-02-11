@@ -1,0 +1,39 @@
+{
+  "name": "ambient-cli",
+  "version": "0.1.0",
+  "description": "Cli tool to interact with the ambient environment",
+  "main": "src/ambient-cli.js",
+  "preferGlobal": "true",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "babel src -d src/build",
+    "prepublish": "npm run build"
+  },
+  "bin": {
+    "ambient-cli": "src/build/ambient-cli.js",
+    "ambient": "src/build/ambient-cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/julienvincent/ambient-cli.git"
+  },
+  "keywords": [
+    "ambient",
+    "cli"
+  ],
+  "author": "Julien Vincent",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/julienvincent/ambient-cli/issues"
+  },
+  "homepage": "https://github.com/julienvincent/ambient-cli#readme",
+  "devDependencies": {
+    "babel-cli": "^6.5.1",
+    "babel-preset-es2015": "^6.5.0",
+    "babel-preset-stage-0": "^6.5.0",
+    "babel-register": "^6.5.1"
+  },
+  "dependencies": {
+    "vorpal": "^1.9.0"
+  }
+}
