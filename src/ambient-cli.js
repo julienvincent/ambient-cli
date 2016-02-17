@@ -41,7 +41,7 @@ define(
             if (config.addEnvironment(name, type, dir, option('use'))) {
                 return `Added environment ${name}`
             } else {
-                return 'Something went wrong'
+                return 'Something went wrong while updating the config file'
             }
         })
     )
@@ -54,12 +54,12 @@ define(
             const config = configManager()
             const res = config.setCurrentEnvironment(name)
 
-            if (res) {
-                return `Set current ${res.type} to ${name}`
-            } else if (res == 'ENOENV') {
+            if (res == 'ENOENV') {
                 return 'Please specify a known environment'
+            } else if (res) {
+                return `Set current ${res.type} to ${name}`
             } else {
-                return 'Something went wrong'
+                return 'Something went wrong while updating the config file'
             }
         })
     )
@@ -72,12 +72,12 @@ define(
             const config = configManager()
             const res = config.removeEnvironment(name)
 
-            if (res) {
-                return `Removed the environment ${name}`
-            } else if (res == 'ENOENV') {
+            if (res == 'ENOENV') {
                 return 'Please specify a known environment'
+            } else if (res) {
+                return `Removed the environment ${name}`
             } else {
-                return 'Something went wrong'
+                return 'Something went wrong while updating the config file'
             }
         })
     )
