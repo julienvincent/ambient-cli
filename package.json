@@ -1,13 +1,14 @@
 {
   "name": "ambient-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Cli tool to interact with the ambient environment",
   "main": "src/ambient-cli.js",
   "preferGlobal": "true",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "babel src -d src/build",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "dev": "node ./src/dev-run.js"
   },
   "bin": {
     "ambient-cli": "src/build/ambient-cli.js",
@@ -34,6 +35,7 @@
     "babel-register": "^6.5.1"
   },
   "dependencies": {
-    "vorpal": "^1.9.0"
+    "lodash": "^4.5.0",
+    "minimist": "^1.2.0"
   }
 }
