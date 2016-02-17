@@ -48,24 +48,6 @@ define(
 )
 
 define(
-    command('use', 'Tell the cli which environment to default to',
-        () => 'A name must be provided',
-        command(':name', "The name of the environment to use", name => {
-            const config = configManager()
-            const res = config.setCurrentEnvironment(name)
-
-            if (res == 'ENOENV') {
-                return 'Please specify a known environment'
-            } else if (res) {
-                return `Set current ${res.type} to ${name}`
-            } else {
-                return 'Something went wrong while updating the config file'
-            }
-        })
-    )
-)
-
-define(
     command('remove', 'Remove an environment from ambients known environments',
         () => 'A name must be provided',
         command(':name', "The name of the environment ambient must remove", name => {
@@ -76,6 +58,24 @@ define(
                 return 'Please specify a known environment'
             } else if (res) {
                 return `Removed the environment ${name}`
+            } else {
+                return 'Something went wrong while updating the config file'
+            }
+        })
+    )
+)
+
+define(
+    command('use', 'Tell the cli which environment to default to',
+        () => 'A name must be provided',
+        command(':name', "The name of the environment to use", name => {
+            const config = configManager()
+            const res = config.setCurrentEnvironment(name)
+
+            if (res == 'ENOENV') {
+                return 'Please specify a known environment'
+            } else if (res) {
+                return `Set current ${res.type} to ${name}`
             } else {
                 return 'Something went wrong while updating the config file'
             }

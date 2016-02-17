@@ -54,15 +54,55 @@ export const define = definition => {
     return commands
 }
 
-export const help = (level = '*') => {
-    console.log(`help listing for level: ${level}`)
+export const help = () => {
+    const listCommands = (chain, commands) => {
+        if (typeof chain === 'string' || !chain.length) {
+            const list = commands => _.forIn(commands, (value, key) => {
+                console.log(` - ${/*key.substring(0, 1) == ':' ? key.substring(1) : */key}\t\t${value.man}`)
+            })
+
+            if (!chain.length) {
+                list(commands)
+            } else {
+                list(commands[chain].commands)
+            }
+        } else {
+            const nextInChain = chain[0]
+            const command = _.find(commands, (value, key) => key == nextInChain)
+
+            if (command) {
+                if (chain.length == 2) {
+                    listCommands(chain[1], command.commands)
+                } else {
+                    listCommands(_.without(chain, nextInChain), command.commands)
+                }
+            } else {
+                console.log(`\nError: Unknown command ${nextInChain}`)
+            }
+        }
+    }
+
+    console.log('CLI tool for interacting with ambient environments.\n')
+
+    console.log('Usage:')
+    console.log("ambient [command] --flags\n")
+
+    if (!found.length) {
+        console.log('Available commands:')
+    } else {
+        console.log(`Available commands for ${found[found.length - 1]}:`)
+    }
+    listCommands(found, commands)
 }
 
 const nextCommand = (commands, index = 0) => {
-    if (!sequence.length || sequence[index] == 'help') {
-        found.push(sequence[index])
+    if (!sequence.length || option('h') || option('help')) {
+        if (sequence[index]) {
+            found.push(sequence[index])
+        }
+
         return {
-            action: help.bind(this, index == 0 ? undefined : sequence[index - 1]),
+            action: help,
             next: null
         }
     } else {
