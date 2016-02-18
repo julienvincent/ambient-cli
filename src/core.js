@@ -42,7 +42,11 @@ export const command = (name, man, action, ...chained) => {
 }
 
 export const option = option => {
-    return _.find(args, (value, key) => key == option) || false
+    return _.find(args, (value, key) => key == option)
+}
+
+export const getBareOptions = () => {
+    return _.filter(process.argv, argument => argument.substring(0, 2) == '--')
 }
 
 export const define = definition => {
@@ -132,11 +136,19 @@ export const init = () => {
         }
 
         const run = (command, param) => {
+            const res = command.action(param)
+            let payload = res,
+                log = res
+
+            if (typeof res === 'object') {
+                payload = res.payload
+                log = res.log
+            }
+
             if (command.next) {
-                run(command.next, command.action(param))
+                run(command.next, payload)
             } else {
-                const res = command.action(param)
-                if (res) console.log(res)
+                if (log) console.log(log)
             }
         }
 

@@ -2,6 +2,7 @@ import fs from 'fs-extra'
 import os from 'os'
 import _ from 'lodash'
 import path from 'path'
+import monitor from './monitor'
 
 export const configManager = () => {
     let config = {
@@ -23,6 +24,55 @@ export const configManager = () => {
 
     const findEnvironment = name => _.find(config.environments, environment => environment.name == name)
 
+    const formatted = environments => {
+        return _.join(_.map(environments, environment => `${environment.name}\t${environment.type}\t${environment.path}`), '\n')
+    }
+
+    const getEnvironments = (opts, cb) => {
+        let environments = _.filter(config.environments, environment => {
+            let matches = true
+
+            if (opts.api) {
+                if (environment.type != 'api') {
+                    matches = false
+                }
+            }
+
+            if (opts.frontend) {
+                if (environment.type != 'frontend') {
+                    matches = false
+                }
+            }
+
+            if (opts.type) {
+                if (environment.type != opts.type) {
+                    matches = false
+                }
+            }
+
+            return matches
+        })
+
+        if (opts.running) {
+            monitor.list(res => {
+                environments = _.filter(environments, environment => _.find(res, instance => (
+                        instance.uid == `${environment.name}-${environment.type}`
+                    )))
+                if (!opts.format) {
+                    cb(environments)
+                } else {
+                    console.log(formatted(environments))
+                }
+            })
+        } else {
+            if (!opts.format) {
+                return environments
+            } else {
+                return formatted(environments)
+            }
+        }
+    }
+
     const mergeConfig = newConfig => {
         try {
             fs.ensureDirSync(path.join(dir, '../'))
@@ -30,7 +80,26 @@ export const configManager = () => {
 
             return true
         } catch (e) {
-            return false
+            return 'EBADCONF'
+        }
+    }
+
+    const interpret = res => {
+        switch (res) {
+            case 'ENOENV':
+                console.log('Please specify a known environment')
+                return false
+            case 'ERESERVED':
+                console.log('That is a reserved name')
+                return false
+            case 'EINUSE':
+                console.log('That name is already in use')
+                return false
+            case 'EBADCONF':
+                console.log('Error updating config file')
+                return false
+            default:
+                return res
         }
     }
 
@@ -43,6 +112,14 @@ export const configManager = () => {
     }
 
     const addEnvironment = (name, type, path, updateCurrent) => {
+        if (findEnvironment(name)) {
+            return 'EINUSE'
+        }
+
+        if (name == 'all') {
+            return 'ERESERVED'
+        }
+
         config.environments.push({
             name: name,
             type: type,
@@ -92,9 +169,13 @@ export const configManager = () => {
 
     return {
         getConfig: getConfig,
+        findEnvironment: findEnvironment,
+        getEnvironments: getEnvironments,
+        formatted: formatted,
         addEnvironment: addEnvironment,
         removeEnvironment: removeEnvironment,
         setCurrentEnvironment: setCurrentEnvironment,
-        mergeConfig: mergeConfig
+        mergeConfig: mergeConfig,
+        interpret: interpret
     }
 }
