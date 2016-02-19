@@ -22,12 +22,16 @@ export const configManager = () => {
     } catch (e) {
     }
 
-    const findEnvironment = name => _.find(config.environments, environment => environment.name == name)
+    const findEnvironment = (name, alias) => _.find(config.environments, environment => {
+        name = name || null
+        alias = alias || null
+        return environment.name === name || environment.name === alias || environment.alias === name || environment.alias === alias
+    })
 
     const formatted = environments => {
         return _.map(environments, environment => [
             environment.name,
-            environment.type,
+            environment.alias || '',
             environment.running ?
                 (environment.running.restarts > 0 ? `Failing [${environment.running.restarts}]` : 'running')
                 : 'stopped',
@@ -36,36 +40,14 @@ export const configManager = () => {
     }
 
     const getEnvironments = (opts, logger) => {
-        let environments = _.filter(config.environments, environment => {
-            let matches = true
-
-            if (opts.api) {
-                if (environment.type != 'api') {
-                    matches = false
-                }
-            }
-
-            if (opts.frontend) {
-                if (environment.type != 'frontend') {
-                    matches = false
-                }
-            }
-
-            if (opts.type) {
-                if (environment.type != opts.type) {
-                    matches = false
-                }
-            }
-
-            return matches
-        })
+        let environments = config.environments
 
         monitor.list(res => {
             environments = _.map(environments, environment => (
             {
                 ...environment,
                 ...{
-                    running: _.find(res, instance => instance.uid == `${environment.name}-${environment.type}`) || false
+                    running: _.find(res, instance => instance.uid == `_${environment.name}_`) || false
                 }
             }
             ))
@@ -119,24 +101,34 @@ export const configManager = () => {
         }
     }
 
-    const addEnvironment = (name, type, path, updateCurrent) => {
-        if (findEnvironment(name)) {
-            return 'EINUSE'
+    const addEnvironment = (name, alias, path, force) => {
+        const environment = findEnvironment(name, alias)
+        let newEnvironment = {
+            name: name,
+            alias: alias,
+            path: path
+        }
+
+        if (environment) {
+            if (force) {
+                monitor.stop(environment)
+                _.forEach(config.environments, (environment, index) => {
+                    if (environment.name == name || environment.alias == name) {
+                        config.environments[index] == newEnvironment
+                    }
+                })
+
+                return mergeConfig(config)
+            } else {
+                return 'EINUSE'
+            }
         }
 
         if (name == 'all') {
             return 'ERESERVED'
         }
 
-        config.environments.push({
-            name: name,
-            type: type,
-            path: path
-        })
-
-        if (updateCurrent && type) {
-            setCurrentEnvironment(name)
-        }
+        config.environments.push(newEnvironment)
 
         return mergeConfig(config)
     }
@@ -147,32 +139,11 @@ export const configManager = () => {
             return 'ENOENV'
         }
 
+        monitor.stop(environment)
         config.environments = _.without(config.environments, environment)
         config.inUse = _.mapValues(config.inUse, value => value == name ? "" : value)
 
         return mergeConfig(config)
-    }
-
-    const setCurrentEnvironment = (name, type) => {
-        const environment = findEnvironment(name)
-
-        if (!environment) {
-            return 'ENOENV'
-        }
-
-        if (!environment.type) {
-            environment.type = type
-        }
-
-        config.inUse[environment.type] = environment.name
-
-        if (mergeConfig(config)) {
-            return {
-                type: environment.type
-            }
-        } else {
-            return false
-        }
     }
 
     return {
@@ -182,7 +153,6 @@ export const configManager = () => {
         formatted: formatted,
         addEnvironment: addEnvironment,
         removeEnvironment: removeEnvironment,
-        setCurrentEnvironment: setCurrentEnvironment,
         mergeConfig: mergeConfig,
         interpret: interpret
     }

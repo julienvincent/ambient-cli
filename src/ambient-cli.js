@@ -10,15 +10,8 @@ define(
         () => 'A name must be provided',
         command(':name', 'The name of the ambient environment', name => {
             let dir = process.cwd()
-            let type = option('t') || option('type')
+            let alias = option('alias') || option('a')
             const forcedDir = option('d') || option('dir')
-
-            if (option('api')) {
-                type = 'api'
-            }
-            if (option('frontend')) {
-                type = 'frontend'
-            }
 
             if (forcedDir) {
                 try {
@@ -34,13 +27,9 @@ define(
                 }
             }
 
-            if (!type) {
-                return 'A type needs to specified.'
-            }
-
             const config = configManager()
 
-            if (config.interpret(config.addEnvironment(name, type, dir, option('use')))) {
+            if (config.interpret(config.addEnvironment(name, alias, dir, option('force') || option('f')))) {
                 return `Added environment ${name}`
             }
         })
@@ -49,6 +38,33 @@ define(
 
 define(
     command('remove', 'Remove an environment from ambients known environments',
+        () => 'A name must be provided',
+        command('all', 'Remove all environments. Must be run with --force, -f',
+            () => {
+                const config = configManager()
+
+                if (option('force') || option('f')) {
+                    config.getConfig().environments.forEach(environment => config.removeEnvironment(environment.name))
+
+                    return 'All environments removed'
+                } else {
+                    return 'This is a dangerous action! If you are sure you would like to do this then run with --force'
+                }
+            }
+        ),
+
+        command(':name', "The name of the environment ambient must remove", name => {
+            const config = configManager()
+
+            if (config.interpret(config.removeEnvironment(name))) {
+                return `Removed the environment ${name}`
+            }
+        })
+    )
+)
+
+define(
+    command('update', 'Update an environment',
         () => 'A name must be provided',
         command(':name', "The name of the environment ambient must remove", name => {
             const config = configManager()
@@ -61,15 +77,16 @@ define(
 )
 
 define(
-    command('use', 'Tell the cli which environment to default to',
+    command('cd', 'Navigate to the environments root',
         () => 'A name must be provided',
-        command(':name', "The name of the environment to use", name => {
-            const config = configManager()
-            const res = config.setCurrentEnvironment(name)
+        command(':name', "The name of the environment to go to", name => {
+            const environment = configManager().findEnvironment(name)
 
-            if (config.interpret(res)) {
-                return `Set current ${res.type} to ${name}`
+            if (!environment) {
+                return 'Please specify a known environment'
             }
+
+            // change directories
         })
     )
 )
@@ -79,12 +96,9 @@ define(
         () => {
             const config = {
                 format: true,
-                frontend: option('frontend'),
-                api: option('api'),
-                type: option('type') || option('t'),
                 running: option('running')
             }
-            const logger = log(['Name', 'Type', 'Status', 'Path'])
+            const logger = log(['Name', 'Alias', 'Status', 'Path'])
 
             return {
                 log: () => {
@@ -105,22 +119,6 @@ define(
                 ...payload.config,
                 ...{
                     running: true
-                }
-            }, payload.logger)
-        }),
-        command('api', "List all api environments", (name, payload) => {
-            configManager().getEnvironments({
-                ...payload.config,
-                ...{
-                    api: true
-                }
-            }, payload.logger)
-        }),
-        command('frontend', "List all frontend environments", (name, payload) => {
-            configManager().getEnvironments({
-                ...payload.config,
-                ...{
-                    frontend: true
                 }
             }, payload.logger)
         })
@@ -193,11 +191,12 @@ define(
 )
 
 flags(
-    ['-t, --type', 'The type of environment'],
-    ['--frontend', 'Filter by type frontend'],
-    ['--api', 'Filter by type api'],
+    ['-a, --alias', 'Set an alias name for the environment'],
+    ['-f, --force', 'Force an action to happen. Commonly used to overwrite an existing environment'],
+    ['-d, --dir', 'Explicitly set the root directory of an environment when adding or updating it'],
     ['--running', 'Filter by their running status'],
     ['--no-daemon', 'Disallow a server from running as a daemon'],
+    ['--no-parse', 'When listing running environments, display a direct listing of running processes'],
     ['--bundle', 'Bundle the environment instead of starting its server'],
     ['--development', 'Start a server in development'],
     ['--production', 'Start a server in production']
