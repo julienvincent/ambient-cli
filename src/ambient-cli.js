@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { command, option, define, help, init } from './core'
+import { command, option, flags, define, help, init } from './core'
 import { configManager } from './config-manager'
 import fs from 'fs'
 import monitor from './monitor'
+import log from './logger'
 
 define(
     command('add', 'Add an ambient environment to list of know environments',
@@ -83,37 +84,45 @@ define(
                 type: option('type') || option('t'),
                 running: option('running')
             }
-            const environments = configManager().getEnvironments(config)
+            const logger = log(['Name', 'Type', 'Status', 'Path'])
 
-            console.log('Name\tType\tPath')
             return {
-                log: environments,
-                payload: config
+                log: () => {
+                    configManager().getEnvironments(config, logger)
+                },
+                payload: {
+                    config: config,
+                    logger: logger
+                }
             }
         },
         command('running', "List all running environments", (name, payload) => {
+            if (option('parse') === false) {
+                return monitor.list('BYPASS')
+            }
+
             configManager().getEnvironments({
-                ...payload,
+                ...payload.config,
                 ...{
                     running: true
                 }
-            })
+            }, payload.logger)
         }),
         command('api', "List all api environments", (name, payload) => {
-            return configManager().getEnvironments({
-                ...payload,
+            configManager().getEnvironments({
+                ...payload.config,
                 ...{
                     api: true
                 }
-            })
+            }, payload.logger)
         }),
         command('frontend', "List all frontend environments", (name, payload) => {
-            return configManager().getEnvironments({
-                ...payload,
+            configManager().getEnvironments({
+                ...payload.config,
                 ...{
                     frontend: true
                 }
-            })
+            }, payload.logger)
         })
     )
 )
@@ -152,17 +161,46 @@ define(
         ),
 
         command(':name', 'Stop the specified environment', name => {
-            //const environment = configManager().findEnvironment(name)
-            //
-            //if (!environment) {
-            //    return 'Please specify a known environment'
-            //}
-            //
-            //console.log('Starting server...')
-            //
-            //monitor.start(environment, !option('no-daemon'))
+            const environment = configManager().findEnvironment(name)
+
+            if (!environment) {
+                return 'Please specify a known environment'
+            }
+
+            console.log('Stopping server...')
+
+            monitor.stop(environment)
         })
     )
+)
+
+define(
+    command('restart', 'Restart ambient servers',
+        () => 'Please specify a name',
+
+        command(':name', 'Restart the specified environment', name => {
+            const environment = configManager().findEnvironment(name)
+
+            if (!environment) {
+                return 'Please specify a known environment'
+            }
+
+            console.log('Restarting server...')
+
+            monitor.restart(environment)
+        })
+    )
+)
+
+flags(
+    ['-t, --type', 'The type of environment'],
+    ['--frontend', 'Filter by type frontend'],
+    ['--api', 'Filter by type api'],
+    ['--running', 'Filter by their running status'],
+    ['--no-daemon', 'Disallow a server from running as a daemon'],
+    ['--bundle', 'Bundle the environment instead of starting its server'],
+    ['--development', 'Start a server in development'],
+    ['--production', 'Start a server in production']
 )
 
 init()

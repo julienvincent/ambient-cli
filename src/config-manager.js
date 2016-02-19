@@ -25,10 +25,17 @@ export const configManager = () => {
     const findEnvironment = name => _.find(config.environments, environment => environment.name == name)
 
     const formatted = environments => {
-        return _.join(_.map(environments, environment => `${environment.name}\t${environment.type}\t${environment.path}`), '\n')
+        return _.map(environments, environment => [
+            environment.name,
+            environment.type,
+            environment.running ?
+                (environment.running.restarts > 0 ? `Failing [${environment.running.restarts}]` : 'running')
+                : 'stopped',
+            environment.path
+        ])
     }
 
-    const getEnvironments = (opts, cb) => {
+    const getEnvironments = (opts, logger) => {
         let environments = _.filter(config.environments, environment => {
             let matches = true
 
@@ -53,24 +60,25 @@ export const configManager = () => {
             return matches
         })
 
-        if (opts.running) {
-            monitor.list(res => {
-                environments = _.filter(environments, environment => _.find(res, instance => (
-                        instance.uid == `${environment.name}-${environment.type}`
-                    )))
-                if (!opts.format) {
-                    cb(environments)
-                } else {
-                    console.log(formatted(environments))
+        monitor.list(res => {
+            environments = _.map(environments, environment => (
+            {
+                ...environment,
+                ...{
+                    running: _.find(res, instance => instance.uid == `${environment.name}-${environment.type}`) || false
                 }
-            })
-        } else {
-            if (!opts.format) {
-                return environments
-            } else {
-                return formatted(environments)
             }
-        }
+            ))
+            if (opts.running) {
+                environments = _.filter(environments, environment => environment.running)
+            }
+
+            if (environments.length) {
+                logger(...formatted(environments))
+            } else {
+                console.log('No configured environments.')
+            }
+        })
     }
 
     const mergeConfig = newConfig => {

@@ -1,5 +1,6 @@
 import minimist from 'minimist'
 import _ from 'lodash'
+import logger from './logger'
 
 _.extractObject = array => {
     let result = {}
@@ -16,6 +17,7 @@ export const args = minimist(process.argv.slice(2))
 let sequence = args._
 let found = []
 let commands = {}
+let availableFlags = []
 
 export const command = (name, man, action, ...chained) => {
     man = man || ''
@@ -58,11 +60,17 @@ export const define = definition => {
     return commands
 }
 
+/**
+ * A hack to let help know what options are available
+ */
+export const flags = (...flags) => availableFlags.push(...flags)
+
 export const help = () => {
+    const createdChain = []
     const listCommands = (chain, commands) => {
         if (typeof chain === 'string' || !chain.length) {
-            const list = commands => _.forIn(commands, (value, key) => {
-                console.log(` - ${/*key.substring(0, 1) == ':' ? key.substring(1) : */key}\t\t${value.man}`)
+            const list = (commands, final) => _.forIn(commands, (value, key) => {
+                createdChain.push([` - ${key}`, value.man])
             })
 
             if (!chain.length) {
@@ -97,6 +105,13 @@ export const help = () => {
         console.log(`Available commands for ${found[found.length - 1]}:`)
     }
     listCommands(found, commands)
+
+    logger(['', ''])(...createdChain)
+
+    if (availableFlags.length) {
+        console.log('\nAvailable flags:')
+        logger(['', ''])(...availableFlags)
+    }
 }
 
 const nextCommand = (commands, index = 0) => {
@@ -148,7 +163,13 @@ export const init = () => {
             if (command.next) {
                 run(command.next, payload)
             } else {
-                if (log) console.log(log)
+                if (log) {
+                    if (typeof log === 'function') {
+                        log()
+                    } else {
+                        console.log(log)
+                    }
+                }
             }
         }
 
