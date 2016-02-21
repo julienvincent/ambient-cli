@@ -88,6 +88,9 @@ export const configManager = () => {
             case 'EBADCONF':
                 console.log('Error updating config file')
                 return false
+            case 'EAINUSE':
+                console.log('Alias cannot be the same as another environments name')
+                return false
             default:
                 return res
         }
@@ -110,17 +113,17 @@ export const configManager = () => {
         }
 
         if (environment) {
-            if (force) {
-                monitor.stop(environment)
-                _.forEach(config.environments, (environment, index) => {
-                    if (environment.name == name || environment.alias == name) {
-                        config.environments[index] == newEnvironment
-                    }
-                })
+            if (environment.name == name || (alias && environment.name === alias)) {
+                if (force) {
+                    monitor.stop(environment, true)
+                    config.environments = _.without(config.environments, environment)
+                } else {
+                    return 'EAINUSE'
+                }
+            }
 
-                return mergeConfig(config)
-            } else {
-                return 'EINUSE'
+            if (environment.alias == name || (alias && environment.alias === alias)) {
+                environment.alias = null
             }
         }
 

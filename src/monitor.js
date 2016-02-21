@@ -69,13 +69,15 @@ const monitor = {
         })
     },
 
-    stop: environment => {
+    stop: (environment, silent) => {
         const uid = `_${environment.name}_`
         monitor.list(running => {
             if (_.find(running, instance => instance.uid == uid)) {
                 forever.stop(uid)
             } else {
-                console.log(`Environment ${environment.name} is not running`)
+                if (!silent) {
+                    console.log(`Environment ${environment.name} is not running`)
+                }
             }
         })
     },
