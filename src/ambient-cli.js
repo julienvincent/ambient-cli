@@ -64,29 +64,10 @@ define(
 )
 
 define(
-    command('update', 'Update an environment',
+    command('update', 'Update an environment (TOODO)',
         () => 'A name must be provided',
         command(':name', "The name of the environment ambient must remove", name => {
             const config = configManager()
-
-            if (config.interpret(config.removeEnvironment(name))) {
-                return `Removed the environment ${name}`
-            }
-        })
-    )
-)
-
-define(
-    command('cd', 'Navigate to the environments root',
-        () => 'A name must be provided',
-        command(':name', "The name of the environment to go to", name => {
-            const environment = configManager().findEnvironment(name)
-
-            if (!environment) {
-                return 'Please specify a known environment'
-            }
-
-            // change directories
         })
     )
 )
@@ -194,12 +175,13 @@ flags(
     ['-a, --alias', 'Set an alias name for the environment'],
     ['-f, --force', 'Force an action to happen. Commonly used to overwrite an existing environment'],
     ['-d, --dir', 'Explicitly set the root directory of an environment when adding or updating it'],
-    ['--running', 'Filter by their running status'],
+    ['--running', 'Filter by environments\' running status'],
     ['--no-daemon', 'Disallow a server from running as a daemon'],
     ['--no-parse', 'When listing running environments, display a direct listing of running processes'],
     ['--bundle', 'Bundle the environment instead of starting its server'],
-    ['--development', 'Start a server in development'],
-    ['--production', 'Start a server in production']
+    ['--development, --dev', 'Start a server in development'],
+    ['--production, --prod', 'Start a server in production'],
+    ['--port, -p', 'Specify the port a server must start on']
 )
 
 init()

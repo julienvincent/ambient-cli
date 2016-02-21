@@ -142,7 +142,7 @@ export const configManager = () => {
             return 'ENOENV'
         }
 
-        monitor.stop(environment)
+        monitor.stop(environment, true)
         config.environments = _.without(config.environments, environment)
         config.inUse = _.mapValues(config.inUse, value => value == name ? "" : value)
 
