@@ -61,7 +61,7 @@ export const configManager = () => {
             config.using == environment.name ? `[${environment.name}]` : environment.name,
             environment.alias || '',
             environment.running ?
-                (environment.running.restarts > 0 ? `Failing [${environment.running.restarts}]` : 'running')
+                (environment.running.restarts > 0 ? `\x1b[31mFailing [${environment.running.restarts}]\x1b[0m` : '\x1b[32mrunning\x1b[0m')
                 : 'stopped',
             environment.path
         ])
