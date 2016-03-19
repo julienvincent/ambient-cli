@@ -28,7 +28,7 @@ define(
                 }
             }
 
-            if (manager.interpret(manager.addEnvironment(name, alias, dir, option('force') || option('f')))) {
+            if (manager.interpret(manager.addEnvironment(name, alias, dir, option('force') || option('f'), option('use') || option('u')))) {
                 return `Added environment ${name}`
             }
         })
@@ -241,6 +241,7 @@ define(
 
 flags(
     ['-a, --alias', 'Set an alias name for the environment'],
+    ['-u, --use', 'Set this environment as default.'],
     ['-f, --force', 'Force an action to happen. Commonly used to overwrite an existing environment'],
     ['-d, --dir', 'Explicitly set the root directory of an environment when adding or updating it'],
     ['--running', 'Filter by environments\' running status'],

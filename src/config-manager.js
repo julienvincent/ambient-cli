@@ -104,7 +104,7 @@ export const configManager = () => {
         }
     }
 
-    const addEnvironment = (name, alias, path, force) => {
+    const addEnvironment = (name, alias, path, force, use) => {
         const environment = findEnvironment(name, alias)
         let newEnvironment = {
             name: name,
@@ -132,6 +132,7 @@ export const configManager = () => {
         }
 
         config.environments.push(newEnvironment)
+        if (use) config.using = newEnvironment.name
 
         return mergeConfig(config)
     }
