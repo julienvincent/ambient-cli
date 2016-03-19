@@ -4,7 +4,7 @@ import { configManager } from './config-manager'
 import fs from 'fs'
 import monitor from './monitor'
 import log from './logger'
-const manager = configManager();
+const manager = configManager()
 
 define(
     command('add', 'Add an ambient environment to list of know environments',

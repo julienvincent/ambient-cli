@@ -14,13 +14,17 @@ Available commands:
   - remove   Remove an environment from ambients known environments
   - update   Update an environment (TOODO)
   - list     List all known environments
+  - use      Specify a default environment
   - start    Run a server
   - stop     Stop ambient servers
   - restart  Restart ambient servers
+  - run      Run a command on an environments root
+  - lint     Attempt to run "npm run lint" at an environments root
 
 Available flags:
 
  -a, --alias           Set an alias name for the environment
+ -u, --use             Set this environment as default.
  -f, --force           Force an action to happen. Commonly used to overwrite an existing environment
  -d, --dir             Explicitly set the root directory of an environment when adding or updating it
  --running             Filter by environments' running status

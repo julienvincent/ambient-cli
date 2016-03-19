@@ -108,9 +108,11 @@ export const help = () => {
 
     logger(['', ''])(...createdChain)
 
-    if (availableFlags.length) {
+    if (availableFlags.length && !found.length) {
         console.log('\nAvailable flags:')
         logger(['', ''])(...availableFlags)
+    } else {
+        console.log('')
     }
 }
 
@@ -175,6 +177,7 @@ export const init = () => {
 
         run(chain)
     } catch (e) {
-        console.log(e)
+        console.log(`${e}\n\n`)
+        help()
     }
 }
