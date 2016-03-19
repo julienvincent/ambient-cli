@@ -228,34 +228,47 @@ define(
     command('run', 'Run a command on an environments root',
         () => 'Please specify an environment name and a command',
         command(':name', 'The environment to install to',
-            name => {
-                const run = (command, name) => {
-                    const environment = manager.findEnvironment(name)
-
-                    if (!environment) {
-                        return 'Please specify a known environment'
-                    }
-
-                    manager.runCommand(command, name)
-                }
-
-                return {
+            name => ({
                     log: () => {
                         console.log('Using default environment\n')
                         const env = manager.defaultEnv()
                         if (env) {
-                            run(name, env)
+                            manager.runCommand(name, env)
                         }
                     },
                     payload: {
-                        run
+                        run: manager.runCommand,
+                        name
                     }
+                }),
+
+            command(':command', 'The command to run',
+                (command, payload) => payload.run(command, payload.name)
+            )
+        )
+    )
+)
+
+define(
+    command('lint', 'Attempt to run "npm run lint" at an environments root',
+        () => {
+            const run = name => manager.runCommand("npm run lint", name)
+
+            return {
+                log: () => {
+                    console.log('Using default environment\n')
+                    const env = manager.defaultEnv()
+                    if (env) {
+                        run(env)
+                    }
+                },
+                payload: {
+                    run
                 }
             }
-        ),
-
-        command(':command', 'The command to run',
-            (command, payload) => payload.run(command, payload.name)
+        },
+        command(':name', 'The environment to install to',
+            (name, payload) => payload.run(name)
         )
     )
 )

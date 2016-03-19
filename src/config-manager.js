@@ -223,6 +223,7 @@ export const configManager = () => {
         interpret,
         useEnvironment,
         defaultEnv,
+        getEnvironmentLocations,
         runCommand
     }
 }
