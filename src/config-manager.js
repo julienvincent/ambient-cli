@@ -2,7 +2,7 @@ import fs from 'fs-extra'
 import os from 'os'
 import _ from 'lodash'
 import path from 'path'
-import { spawn } from 'child_process'
+import {spawn} from 'child_process'
 import monitor from './monitor'
 
 export const configManager = () => {
@@ -31,7 +31,7 @@ export const configManager = () => {
         try {
             locations.ambient = JSON.parse(fs.readFileSync(path.join(environment.path, '.ambient'), 'utf8'))
             if (locations.ambient.root) {
-                locations.root += locations.ambient.root
+                locations.root = path.join(locations.root, locations.ambient.root)
             }
             return locations
         } catch (e) {
@@ -41,7 +41,7 @@ export const configManager = () => {
             } catch (e) {
                 try {
                     locations.package = JSON.parse(fs.readFileSync(path.join(environment.path, 'src/package.json'), 'utf8'))
-                    locations.root += 'src'
+                    locations.root = path.join(locations.root, 'src')
                     return locations
                 } catch (e) {
                     return false
@@ -202,14 +202,18 @@ export const configManager = () => {
     }
 
     const runCommand = (command, name) => {
-        const locations = getEnvironmentLocations(name)
-        process.chdir(locations.root)
+        try {
+            const locations = getEnvironmentLocations(name)
+            process.chdir(locations.root)
 
-        const args = _.split(command, ' ')
+            const args = _.split(command, ' ')
 
-        spawn(args[0], _.without(args, args[0]), {
-            stdio: 'inherit'
-        })
+            spawn(args[0], _.without(args, args[0]), {
+                stdio: 'inherit'
+            })
+        } catch (e) {
+            console.log(e)
+        }
     }
 
     return {

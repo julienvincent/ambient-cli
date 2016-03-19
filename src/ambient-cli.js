@@ -256,7 +256,7 @@ define(
 
             return {
                 log: () => {
-                    console.log('Using default environment\n')
+                    console.log('Using default environment')
                     const env = manager.defaultEnv()
                     if (env) {
                         run(env)
