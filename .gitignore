@@ -1,4 +1,4 @@
 .idea
 node_modules
-src/build
+lib
 npm-debug.log

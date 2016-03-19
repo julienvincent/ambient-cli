@@ -4,6 +4,7 @@ import { configManager } from './config-manager'
 import fs from 'fs'
 import monitor from './monitor'
 import log from './logger'
+const manager = configManager();
 
 define(
     command('add', 'Add an ambient environment to list of know environments',
@@ -27,9 +28,7 @@ define(
                 }
             }
 
-            const config = configManager()
-
-            if (config.interpret(config.addEnvironment(name, alias, dir, option('force') || option('f')))) {
+            if (manager.interpret(manager.addEnvironment(name, alias, dir, option('force') || option('f')))) {
                 return `Added environment ${name}`
             }
         })
@@ -41,10 +40,8 @@ define(
         () => 'A name must be provided',
         command('all', 'Remove all environments. Must be run with --force, -f',
             () => {
-                const config = configManager()
-
                 if (option('force') || option('f')) {
-                    config.getConfig().environments.forEach(environment => config.removeEnvironment(environment.name))
+                    manager.getConfig().environments.forEach(environment => manager.removeEnvironment(environment.name))
 
                     return 'All environments removed'
                 } else {
@@ -54,9 +51,7 @@ define(
         ),
 
         command(':name', "The name of the environment ambient must remove", name => {
-            const config = configManager()
-
-            if (config.interpret(config.removeEnvironment(name))) {
+            if (manager.interpret(manager.removeEnvironment(name))) {
                 return `Removed the environment ${name}`
             }
         })
@@ -67,7 +62,7 @@ define(
     command('update', 'Update an environment (TOODO)',
         () => 'A name must be provided',
         command(':name', "The name of the environment ambient must remove", name => {
-            const config = configManager()
+
         })
     )
 )
@@ -83,7 +78,7 @@ define(
 
             return {
                 log: () => {
-                    configManager().getEnvironments(config, logger)
+                    manager.getEnvironments(config, logger)
                 },
                 payload: {
                     config: config,
@@ -96,7 +91,7 @@ define(
                 return monitor.list('BYPASS')
             }
 
-            configManager().getEnvironments({
+            manager.getEnvironments({
                 ...payload.config,
                 ...{
                     running: true
@@ -107,67 +102,140 @@ define(
 )
 
 define(
+    command('use', 'Specify a default environment',
+        () => 'Please specify an environment name',
+        command(':name', 'The environment to install to',
+            name => {
+                if (manager.useEnvironment(name)) {
+                    return `Further commands will now default to environment [${name}]`
+                }
+            }
+        )
+    )
+)
+
+define(
     command('start', 'Run a server',
-        () => 'Please specify an environment',
-        command(':name', 'Start the specified environment', name => {
-            const environment = configManager().findEnvironment(name)
+        () => {
+            const start = name => {
+                const environment = manager.findEnvironment(name)
 
-            if (!environment) {
-                return 'Please specify a known environment'
+                if (!environment) {
+                    return 'Please specify a known environment'
+                }
+
+                console.log('Starting server...')
+
+                let daemon = true
+                if (option('daemon') === false) {
+                    daemon = false
+                } else if (option('bundle')) {
+                    daemon = false
+                }
+
+                monitor.start(environment, daemon)
             }
 
-            console.log('Starting server...')
-
-            let daemon = true
-            if (option('daemon') === false) {
-                daemon = false
-            } else if (option('bundle')) {
-                daemon = false
+            return {
+                log: () => {
+                    console.log('Running command on default environment.')
+                    const env = manager.defaultEnv()
+                    if (env) {
+                        start(env)
+                    }
+                },
+                payload: {
+                    start
+                }
             }
-
-            monitor.start(environment, daemon)
-        })
+        },
+        command(':name', 'Start the specified environment', (name, payload) => payload.start(name))
     )
 )
 
 define(
     command('stop', 'Stop ambient servers',
-        () => 'Please specify a name',
+        () => {
+            const stop = name => {
+                const environment = manager.findEnvironment(name)
+
+                if (!environment) {
+                    return 'Please specify a known environment'
+                }
+
+                console.log('Stopping server...')
+
+                monitor.stop(environment)
+            }
+
+            return {
+                log: () => {
+                    console.log('Using default environment\n')
+                    const env = manager.defaultEnv()
+                    if (env) {
+                        stop(env)
+                    }
+                },
+                payload: {
+                    stop
+                }
+            }
+        },
         command('all', 'Stop all servers.',
             () => {
                 monitor.stopAll()
             }
         ),
 
-        command(':name', 'Stop the specified environment', name => {
-            const environment = configManager().findEnvironment(name)
-
-            if (!environment) {
-                return 'Please specify a known environment'
-            }
-
-            console.log('Stopping server...')
-
-            monitor.stop(environment)
-        })
+        command(':name', 'Stop the specified environment', (name, payload) => payload.stop(name))
     )
 )
 
 define(
     command('restart', 'Restart ambient servers',
-        () => 'Please specify a name',
+        () => {
+            const restart = name => {
+                const environment = manager.findEnvironment(name)
 
-        command(':name', 'Restart the specified environment', name => {
-            const environment = configManager().findEnvironment(name)
+                if (!environment) {
+                    return 'Please specify a known environment'
+                }
 
-            if (!environment) {
-                return 'Please specify a known environment'
+                console.log('Restarting server...')
+
+                monitor.restart(environment)
             }
 
-            console.log('Restarting server...')
+            return {
+                log: () => {
+                    console.log('Using default environment.')
+                    const env = manager.defaultEnv()
+                    if (env) {
+                        restart(env)
+                    }
+                },
+                payload: {
+                    restart
+                }
+            }
+        },
 
-            monitor.restart(environment)
-        })
+        command(':name', 'Restart the specified environment', (name, payload) => payload.restart(name))
+    )
+)
+
+define(
+    command('install', 'Install a node package through npm',
+        () => 'Please specify an environment name',
+        command(':name', 'The environment to install to',
+            name => ({
+                log: 'Please specify a package',
+                payload: name
+            }),
+            command(':package', (npmPackage, name) => {
+                console.log(npmPackage, name)
+            })
+        )
     )
 )
 

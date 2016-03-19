@@ -133,7 +133,7 @@ const nextCommand = (commands, index = 0) => {
 
             return {
                 action: command.action.bind(this, sequence[index - 1]),
-                next: !_.isEmpty(command.commands) && sequence.length == index + 1 ? nextCommand(command.commands, index) : null
+                next: !_.isEmpty(command.commands) && sequence.length >= index + 1 ? nextCommand(command.commands, index) : null
             }
         } else {
             throw new Error(`Unknown command ${sequence[index]}`)

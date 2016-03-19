@@ -7,10 +7,7 @@ import monitor from './monitor'
 export const configManager = () => {
     let config = {
         environments: [],
-        inUse: {
-            frontend: '',
-            api: ''
-        }
+        using: null
     }
     let dir = `${os.homedir()}/.ambient/config.json`
 
@@ -30,7 +27,7 @@ export const configManager = () => {
 
     const formatted = environments => {
         return _.map(environments, environment => [
-            environment.name,
+            config.using == environment.name ? `[${environment.name}]` : environment.name,
             environment.alias || '',
             environment.running ?
                 (environment.running.restarts > 0 ? `Failing [${environment.running.restarts}]` : 'running')
@@ -91,6 +88,9 @@ export const configManager = () => {
             case 'EAINUSE':
                 console.log('Alias cannot be the same as another environments name')
                 return false
+            case 'ENODEF':
+                console.log('No default environment has been set. You can set one by using the "use" command')
+                return false
             default:
                 return res
         }
@@ -136,6 +136,26 @@ export const configManager = () => {
         return mergeConfig(config)
     }
 
+    const useEnvironment = (name) => {
+        const environment = findEnvironment(name)
+
+        if (!environment) {
+            return interpret('ENOENV')
+        }
+        config.using = (environment.name)
+
+        return mergeConfig(config)
+    }
+
+    const defaultEnv = () => {
+        const env = findEnvironment(config.using)
+        if (!env) {
+            return interpret('ENODEF')
+        }
+
+        return env.name
+    }
+
     const removeEnvironment = name => {
         const environment = findEnvironment(name)
         if (!environment) {
@@ -150,13 +170,15 @@ export const configManager = () => {
     }
 
     return {
-        getConfig: getConfig,
-        findEnvironment: findEnvironment,
-        getEnvironments: getEnvironments,
-        formatted: formatted,
-        addEnvironment: addEnvironment,
-        removeEnvironment: removeEnvironment,
-        mergeConfig: mergeConfig,
-        interpret: interpret
+        getConfig,
+        findEnvironment,
+        getEnvironments,
+        formatted,
+        addEnvironment,
+        removeEnvironment,
+        mergeConfig,
+        interpret,
+        useEnvironment,
+        defaultEnv
     }
 }
