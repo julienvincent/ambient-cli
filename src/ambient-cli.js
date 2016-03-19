@@ -225,16 +225,37 @@ define(
 )
 
 define(
-    command('install', 'Install a node package through npm',
-        () => 'Please specify an environment name',
+    command('run', 'Run a command on an environments root',
+        () => 'Please specify an environment name and a command',
         command(':name', 'The environment to install to',
-            name => ({
-                log: 'Please specify a package',
-                payload: name
-            }),
-            command(':package', (npmPackage, name) => {
-                console.log(npmPackage, name)
-            })
+            name => {
+                const run = (command, name) => {
+                    const environment = manager.findEnvironment(name)
+
+                    if (!environment) {
+                        return 'Please specify a known environment'
+                    }
+
+                    manager.runCommand(command, name)
+                }
+
+                return {
+                    log: () => {
+                        console.log('Using default environment\n')
+                        const env = manager.defaultEnv()
+                        if (env) {
+                            run(name, env)
+                        }
+                    },
+                    payload: {
+                        run
+                    }
+                }
+            }
+        ),
+
+        command(':command', 'The command to run',
+            (command, payload) => payload.run(command, payload.name)
         )
     )
 )
