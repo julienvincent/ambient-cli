@@ -1,128 +1,135 @@
-import forever from 'forever'
 import { spawn } from 'child_process'
+import os from 'os'
 import { getBareOptions } from './core'
-import fs from 'fs'
+import { configManager } from './config-manager'
+import fs from 'fs-extra'
 import path from 'path'
 import _ from 'lodash'
 
 const monitor = {
-    start: (environment, daemon) => {
-        process.chdir(environment.path)
-        let conf = {
-                uid: `_${environment.name}_`,
-                args: _.without(getBareOptions(), '-d', '--daemon'),
-                max: !daemon ? 1 : 10,
-                minUptime: 1000,
-                spinSleepTime: 3000,
-                killSignal: 'SIGTERM'
-            },
-            server
-        const start = () => {
-            if (server) server = path.join(process.cwd(), server)
+    getProcess: name => {
+        try {
+            const _process = JSON.parse(fs.readFileSync(path.join(os.homedir(), `.ambient/processes/${name}.json`), 'utf8'))
 
-            if (!daemon) {
-                const args = [..._.split(conf.command, " "), ...conf.args]
-
-                spawn(conf.command ? args[0] : 'node', _.filter([server, ..._.without(args, args[0])], arg => arg !== null), {
-                    stdio: 'inherit'
-                })
-            } else {
-                if (!server) {
-                    const args = [..._.split(conf.command, " "), ...conf.args]
-                    conf.command = args[0]
-                    server = args[1] || ''
-                    conf.args = _.without(args, args[0], args[1] || '', '--daemon', '-d')
-                }
-                forever.startDaemon(server, conf)
+            try {
+                process.kill(_process.pid, 0)
+                _process._isRunning = true
+            } catch (e) {
+                _process._isRunning = false
             }
+
+            return _process
+        } catch (e) {
+            return false
         }
-
-        const findDefault = () => {
-            const parseData = data => {
-                data = JSON.parse(data)
-                server = data.main
-                start()
-            }
-            fs.readFile(path.join(process.cwd(), 'package.json'), 'utf8', (err, data) => {
-                if (!err) {
-                    parseData(data)
-                } else {
-                    fs.readFile(path.join(process.cwd(), 'src/package.json'), 'utf8', (err, data) => {
-                        if (!err) {
-                            process.chdir(path.join(process.cwd(), 'src'))
-                            parseData(data)
-                        } else {
-                            console.log('Could not find package.json in environment. Alternatively you can specify the relative location ' +
-                                "of your server with '--server=[dir]', or create a .ambient file in your environments root")
-                        }
-                    })
-                }
-            })
-        }
-
-        fs.readFile(path.join(process.cwd(), '.ambient'), 'utf8', (err, file) => {
-            if (!err) {
-                file = JSON.parse(file)
-                if (file.command) {
-                    conf.command = file.command
-                }
-                if (file.root) {
-                    process.chdir(path.join(process.cwd(), file.root))
-                    conf.root = path.join(process.cwd(), file.root)
-                }
-                if (file.script) {
-                    server = file.script
-                    start()
-                } else if (file.script === false && !daemon) {
-                    server = null
-                    start()
-                } else {
-                    findDefault()
-                }
-            } else {
-                findDefault()
-            }
-        })
     },
 
-    stop: (environment, silent) => {
-        const uid = `_${environment.name}_`
-        monitor.list(running => {
-            if (_.find(running, instance => instance.uid == uid)) {
-                forever.stop(uid)
-            } else {
-                if (!silent) {
-                    console.log(`Environment ${environment.name} is not running`)
+    createProcess: opts => {
+        opts = {
+            name: 'ambient-process',
+            args: [],
+            maxAttempts: 10,
+            sleepTime: 3000,
+            killSignal: 'SIGTERM',
+            command: 'node',
+            daemon: false,
+            root: process.cwd(),
+            _isProcess: true,
+            logDir: path.join(os.homedir(), '.ambient/logs'),
+            ...opts
+        }
+
+        const oldProcess = monitor.getProcess(opts.name)
+        if (oldProcess && oldProcess._isRunning) {
+            console.log('Process is already running. Stop the old one before running a new process.')
+            return false
+        }
+
+        fs.ensureDirSync(opts.logDir)
+        const logs = fs.openSync(path.join(opts.logDir, `${opts.name}.log`), 'a')
+
+        const _process = spawn(opts.command, [...opts.args, ..._.without(getBareOptions(), '-d', '--daemon')], {
+            detached: false,
+            cwd: opts.root,
+            stdio: opts.daemon ? ['ignore', logs, logs] : 'inherit'
+        })
+        if (opts.daemon) _process.unref()
+
+        try {
+            fs.outputJsonSync(path.join(os.homedir(), `.ambient/processes/${opts.name}.json`), {
+                ...opts,
+                pid: _process.pid
+            })
+        } catch (e) {
+            console.log(`Couldn't write to pid file: ${e}`)
+        }
+    },
+
+    start: (environment, daemon, logDir, reuse) => {
+        if (environment._isProcess) {
+            monitor.createProcess(environment)
+        } else {
+            if (reuse) {
+                const _process = monitor.getProcess(environment.name)
+
+                if (_process) {
+                    return monitor.createProcess(_process)
                 }
             }
-        })
+
+            const locations = configManager().getEnvironmentLocations(environment)
+
+            const args = _.split(locations.ambient.command, ' ')
+
+            monitor.createProcess({
+                command: args[0] || 'node',
+                args: _.filter([locations.script || null, ..._.without(args, args[0])], arg => arg !== null),
+                name: environment.name,
+                root: locations.root,
+                logDir: logDir || path.join(os.homedir(), '.ambient/logs'),
+                daemon
+            })
+        }
+    },
+
+    stop: (environment) => {
+        const name = typeof environment == 'object' ? environment.name : environment
+        const _process = monitor.getProcess(name)
+
+        if (_process && _process._isRunning) {
+            process.kill(_process.pid)
+            return _process
+        } else {
+            return false
+        }
     },
 
     stopAll: () => {
-        monitor.list(running => {
-            if (running.length) {
-                forever.stopAll()
-            } else {
-                console.log('no running processes')
+        _.forEach(configManager().getConfig().environments, environment => {
+            const _process = monitor.stop(environment)
+            if (_process) {
+                console.log(`stopped [${environment.name}] <${_process.pid}>`)
             }
         })
     },
 
     restart: environment => {
-        monitor.stop(environment)
+        const _process = monitor.stop(environment)
         process.nextTick(() => {
-            monitor.start(environment, true)
+            monitor.start(_process)
         })
     },
 
-    list: cb => {
-        forever.list(false, (err, running) => {
-            if (typeof cb === 'function') {
-                cb(_.filter(running, instance => instance.running))
-            } else if (cb === 'BYPASS') {
-                console.log(running)
-            }
-        })
+    list: () => {
+        try {
+            const processes = fs.readdirSync(path.join(os.homedir(), '.ambient/processes'))
+
+            return _.filter(_.map(processes, _process => {
+                return monitor.getProcess(_process.replace('.json', ''))
+            }), _process => _process._isRunning)
+        } catch (e) {
+            console.log(`Unable to read dir .ambient/processes: ${e}`)
+        }
     }
 }
 export default monitor

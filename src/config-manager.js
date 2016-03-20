@@ -2,7 +2,7 @@ import fs from 'fs-extra'
 import os from 'os'
 import _ from 'lodash'
 import path from 'path'
-import {spawn} from 'child_process'
+import { spawn } from 'child_process'
 import monitor from './monitor'
 
 export const configManager = () => {
@@ -25,6 +25,7 @@ export const configManager = () => {
         const locations = {
             ambient: {},
             root: environment.path,
+            script: false,
             package: {}
         }
 
@@ -33,15 +34,20 @@ export const configManager = () => {
             if (locations.ambient.root) {
                 locations.root = path.join(locations.root, locations.ambient.root)
             }
+            if (locations.ambient.script) {
+                locations.script = locations.ambient.script
+            }
             return locations
         } catch (e) {
             try {
                 locations.package = JSON.parse(fs.readFileSync(path.join(environment.path, 'package.json'), 'utf8'))
+                locations.script = locations.package.main || false
                 return locations
             } catch (e) {
                 try {
                     locations.package = JSON.parse(fs.readFileSync(path.join(environment.path, 'src/package.json'), 'utf8'))
                     locations.root = path.join(locations.root, 'src')
+                    locations.script = locations.package.main || false
                     return locations
                 } catch (e) {
                     return false
@@ -70,25 +76,25 @@ export const configManager = () => {
     const getEnvironments = (opts, logger) => {
         let environments = config.environments
 
-        monitor.list(res => {
-            environments = _.map(environments, environment => (
-            {
-                ...environment,
-                ...{
-                    running: _.find(res, instance => instance.uid == `_${environment.name}_`) || false
-                }
-            }
-            ))
-            if (opts.running) {
-                environments = _.filter(environments, environment => environment.running)
-            }
+        const runningProcesses = monitor.list()
 
-            if (environments.length) {
-                logger(...formatted(environments))
-            } else {
-                console.log('No configured environments.')
+        environments = _.map(environments, environment => (
+        {
+            ...environment,
+            ...{
+                running: _.find(runningProcesses, instance => instance.name == environment.name) || false
             }
-        })
+        }
+        ))
+        if (opts.running) {
+            environments = _.filter(environments, environment => environment.running)
+        }
+
+        if (environments.length) {
+            logger(...formatted(environments))
+        } else {
+            console.log('No configured environments.')
+        }
     }
 
     const mergeConfig = newConfig => {

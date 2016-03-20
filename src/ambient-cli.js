@@ -5,6 +5,7 @@ import fs from 'fs'
 import monitor from './monitor'
 import log from './logger'
 const manager = configManager()
+import path from 'path'
 
 define(
     command('add', 'Add an ambient environment to list of know environments',
@@ -131,7 +132,14 @@ define(
                     daemon = false
                 }
 
-                monitor.start(environment, daemon)
+                let logs = option('l') || option('logs')
+                if (logs) {
+                    if (logs.substring(0, 1) != '/') {
+                        logs = path.join(process.cwd(), logs)
+                    }
+                }
+
+                monitor.start(environment, daemon, logs, option('R') || option('reuse'))
             }
 
             return {
@@ -313,6 +321,8 @@ flags(
     ['-u, --use', 'Set this environment as default.'],
     ['-f, --force', 'Force an action to happen. Commonly used to overwrite an existing environment'],
     ['--dir', 'Explicitly set the root directory of an environment when adding or updating it'],
+    ['-l, --logs', 'Directory to store logs when running processes'],
+    ['-R, --reuse', 'Reuse an old process (including its runtime options and arguments)'],
     ['--running', 'Filter by environments\' running status'],
     ['-d, --daemon', 'Start a server as a daemon'],
     ['--no-parse', 'When listing running environments, display a direct listing of running processes'],
