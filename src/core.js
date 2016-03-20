@@ -94,7 +94,7 @@ export const help = () => {
         }
     }
 
-    console.log('CLI tool for interacting with ambient environments.\n')
+    console.log('Cli tool for interacting with development environments from anywhere.\n')
 
     console.log('Usage:')
     console.log("ambient [command] --flags\n")

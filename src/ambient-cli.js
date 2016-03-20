@@ -290,6 +290,7 @@ define(
                     let save = '--save'
                     if (option('save') === false) save = ''
                     if ('save-dev') save = '--save-dev'
+                    if (option('jspm')) save = ''
                     manager.runCommand(`${packageManager} install ${packageName} ${save}`, name)
                 }
 
