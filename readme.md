@@ -1,4 +1,6 @@
-# Cli tool for interacting with development environments from anywhere
+# ambient-cli
+
+Cli tool for interacting with development environments from anywhere
 
 #### Command list
 

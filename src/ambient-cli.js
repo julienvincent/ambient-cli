@@ -89,7 +89,7 @@ define(
         },
         command('running', "List all running environments", (name, payload) => {
             if (option('parse') === false) {
-                return monitor.list('BYPASS')
+                return monitor.list()
             }
 
             manager.getEnvironments({
@@ -287,11 +287,11 @@ define(
             name => {
                 const install = (packageName, name) => {
                     const packageManager = option('jspm') ? 'jspm' : 'npm'
-                    let save = '--save'
+                    let save = ' --save'
                     if (option('save') === false) save = ''
-                    if ('save-dev') save = '--save-dev'
+                    if ('save-dev') save = ' --save-dev'
                     if (option('jspm')) save = ''
-                    manager.runCommand(`${packageManager} install ${packageName} ${save}`, name)
+                    manager.runCommand(`${packageManager} install ${packageName}${save}`, name)
                 }
 
                 return {
@@ -327,10 +327,9 @@ flags(
     ['--running', 'Filter by environments\' running status'],
     ['-d, --daemon', 'Start a server as a daemon'],
     ['--no-parse', 'When listing running environments, display a direct listing of running processes'],
-    ['--bundle', 'Bundle the environment instead of starting its server'],
+    ['--no-save', 'Install a module without saving it'],
     ['--development, --dev', 'Start a server in development'],
-    ['--production, --prod', 'Start a server in production'],
-    ['--port, -p', 'Specify the port a server must start on']
+    ['--production, --prod', 'Start a server in production']
 )
 
 init()
