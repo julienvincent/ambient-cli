@@ -12,7 +12,7 @@ define(
         command(':name', 'The name of the ambient environment', name => {
             let dir = process.cwd()
             let alias = option('alias') || option('a')
-            const forcedDir = option('d') || option('dir')
+            const forcedDir = option('dir')
 
             if (forcedDir) {
                 try {
@@ -126,10 +126,8 @@ define(
 
                 console.log('Starting server...')
 
-                let daemon = true
-                if (option('daemon') === false) {
-                    daemon = false
-                } else if (option('bundle')) {
+                let daemon = option('d') || option('daemon')
+                if (option('bundle')) {
                     daemon = false
                 }
 
@@ -229,18 +227,18 @@ define(
         () => 'Please specify an environment name and a command',
         command(':name', 'The environment to install to',
             name => ({
-                    log: () => {
-                        console.log('Using default environment\n')
-                        const env = manager.defaultEnv()
-                        if (env) {
-                            manager.runCommand(name, env)
-                        }
-                    },
-                    payload: {
-                        run: manager.runCommand,
-                        name
+                log: () => {
+                    console.log('Using default environment\n')
+                    const env = manager.defaultEnv()
+                    if (env) {
+                        manager.runCommand(name, env)
                     }
-                }),
+                },
+                payload: {
+                    run: manager.runCommand,
+                    name
+                }
+            }),
 
             command(':command', 'The command to run',
                 (command, payload) => payload.run(command, payload.name)
@@ -273,13 +271,50 @@ define(
     )
 )
 
+define(
+    command('install', 'Install a package using npm [or --jspm]',
+        () => 'Please specify an environment name and a package name',
+
+        command(':name', 'The name of the environment',
+            name => {
+                const install = (packageName, name) => {
+                    const packageManager = option('jspm') ? 'jspm' : 'npm'
+                    let save = '--save'
+                    if (option('save') === false) save = ''
+                    if ('save-dev') save = '--save-dev'
+                    manager.runCommand(`${packageManager} install ${packageName} ${save}`, name)
+                }
+
+                return {
+                    log: () => {
+                        console.log('Using default environment')
+                        const env = manager.defaultEnv()
+                        if (env) {
+                            install(name, env)
+                        }
+                    },
+
+                    payload: {
+                        install,
+                        name
+                    }
+                }
+            },
+
+            command(':package', 'The package to install',
+                (packageName, payload) => payload.install(packageName, payload.name)
+            )
+        )
+    )
+)
+
 flags(
     ['-a, --alias', 'Set an alias name for the environment'],
     ['-u, --use', 'Set this environment as default.'],
     ['-f, --force', 'Force an action to happen. Commonly used to overwrite an existing environment'],
-    ['-d, --dir', 'Explicitly set the root directory of an environment when adding or updating it'],
+    ['--dir', 'Explicitly set the root directory of an environment when adding or updating it'],
     ['--running', 'Filter by environments\' running status'],
-    ['--no-daemon', 'Disallow a server from running as a daemon'],
+    ['-d, --daemon', 'Start a server as a daemon'],
     ['--no-parse', 'When listing running environments, display a direct listing of running processes'],
     ['--bundle', 'Bundle the environment instead of starting its server'],
     ['--development, --dev', 'Start a server in development'],

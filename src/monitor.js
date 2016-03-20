@@ -1,4 +1,5 @@
 import forever from 'forever'
+import { spawn } from 'child_process'
 import { getBareOptions } from './core'
 import fs from 'fs'
 import path from 'path'
@@ -9,18 +10,29 @@ const monitor = {
         process.chdir(environment.path)
         let conf = {
                 uid: `_${environment.name}_`,
-                args: getBareOptions(),
+                args: _.without(getBareOptions(), '-d', '--daemon'),
                 max: !daemon ? 1 : 10,
                 minUptime: 1000,
-                spinSleepTime: 3000
+                spinSleepTime: 3000,
+                killSignal: 'SIGTERM'
             },
             server
         const start = () => {
-            server = path.join(process.cwd(), server)
+            if (server) server = path.join(process.cwd(), server)
 
-            if (daemon === false) {
-                forever.start(server, conf)
+            if (!daemon) {
+                const args = [..._.split(conf.command, " "), ...conf.args]
+
+                spawn(conf.command ? args[0] : 'node', _.filter([server, ..._.without(args, args[0])], arg => arg !== null), {
+                    stdio: 'inherit'
+                })
             } else {
+                if (!server) {
+                    const args = [..._.split(conf.command, " "), ...conf.args]
+                    conf.command = args[0]
+                    server = args[1] || ''
+                    conf.args = _.without(args, args[0], args[1] || '', '--daemon', '-d')
+                }
                 forever.startDaemon(server, conf)
             }
         }
@@ -51,14 +63,18 @@ const monitor = {
         fs.readFile(path.join(process.cwd(), '.ambient'), 'utf8', (err, file) => {
             if (!err) {
                 file = JSON.parse(file)
-                if (file.command && file.script) {
+                if (file.command) {
                     conf.command = file.command
                 }
-                if (file.root && file.script) {
-                    conf.root = process.chdir(path.join(process.cwd(), file.root))
+                if (file.root) {
+                    process.chdir(path.join(process.cwd(), file.root))
+                    conf.root = path.join(process.cwd(), file.root)
                 }
                 if (file.script) {
                     server = file.script
+                    start()
+                } else if (file.script === false && !daemon) {
+                    server = null
                     start()
                 } else {
                     findDefault()
