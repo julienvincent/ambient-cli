@@ -1,6 +1,6 @@
 {
   "name": "ambient-cli",
-  "version": "0.6.4",
+  "version": "0.7.0",
   "description": "Cli tool to interact with the ambient environment",
   "main": "src/ambient-cli.js",
   "preferGlobal": "true",
