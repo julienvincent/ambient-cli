@@ -65,7 +65,7 @@ const monitor = {
         }
     },
 
-    start: (environment, daemon, logDir, reuse) => {
+    start: (environment, daemon, logDir, reuse, timeout) => {
         if (environment._isProcess) {
             monitor.createProcess(environment)
         } else {
@@ -92,13 +92,43 @@ const monitor = {
         }
     },
 
-    stop: (environment) => {
+    stop: (environment, timeout, inherit) => {
         const name = typeof environment == 'object' ? environment.name : environment
         const _process = monitor.getProcess(name)
+        timeout = typeof timeout === 'number' ? timeout : 10000
 
         if (_process && _process._isRunning) {
             process.kill(_process.pid, _process.killSignal)
-            return _process
+            const attempts = timeout / 100
+
+            const status = success => {
+                success = success || function () {
+                    }
+
+                const check = (_process, attempt = 1) => {
+                    const state = monitor.getProcess(_process.name)
+                    if (state && state._isRunning) {
+                        if (attempt < attempts) {
+                            setTimeout(() => {
+                                check(_process, attempt + 1)
+                            }, 100)
+                        } else {
+                            console.log(`Unable to stop process [${name}] after ${timeout / 1000} seconds`)
+                        }
+                    } else {
+                        success()
+                    }
+                }
+                check(_process)
+            }
+
+
+            if (inherit) {
+                status._process = _process
+                return status
+            } else {
+                status(() => console.log('stopped'))
+            }
         } else {
             return false
         }
@@ -106,32 +136,18 @@ const monitor = {
 
     stopAll: () => {
         _.forEach(configManager().getConfig().environments, environment => {
-            const _process = monitor.stop(environment)
-            if (_process) {
-                console.log(`stopped [${environment.name}] <${_process.pid}>`)
+            const hasStopped = monitor.stop(environment)
+            if (hasStopped) {
+                hasStopped(() => console.log(`stopped [${environment.name}] <${hasStopped._process.pid}>`))
             }
         })
     },
 
     restart: (environment, timeout) => {
-        const _process = monitor.stop(environment)
-        const attempts = (timeout || 10000) / 100
-
-        const start = (_process, attempt = 0) => {
-            const state = monitor.getProcess(_process.name)
-            if (state && state._isRunning) {
-                if (attempt <= attempts) {
-                    setTimeout(() => {
-                        start(_process, attempt + 1)
-                    }, 100)
-                } else {
-                    console.log(`Unable to stop process after ${(timeout || 10000) / 1000} seconds`)
-                }
-            } else {
-                monitor.createProcess(_process)
-            }
-        }
-        start(_process)
+        const hasStopped = monitor.stop(environment, timeout, true)
+        hasStopped(() => {
+            monitor.createProcess(hasStopped._process)
+        })
     },
 
     list: () => {

@@ -139,13 +139,13 @@ define(
                     }
                 }
 
-                monitor.start(environment, daemon, logs, option('R') || option('reuse'))
+                monitor.start(environment, daemon, logs, option('R') || option('reuse'), option('t') || option('timeout'))
             }
 
             return {
                 log: () => {
-                    console.log('Running command on default environment.')
                     const env = manager.defaultEnv()
+                    console.log(`[Using ${env}]`)
                     if (env) {
                         start(env)
                     }
@@ -171,13 +171,15 @@ define(
 
                 console.log('Stopping server...')
 
-                monitor.stop(environment)
+                if (monitor.stop(environment, option('t') || option('timeout')) === false) {
+                    console.log(`No running process [${name}]`)
+                }
             }
 
             return {
                 log: () => {
-                    console.log('Using default environment\n')
                     const env = manager.defaultEnv()
+                    console.log(`[Using ${env}]`)
                     if (env) {
                         stop(env)
                     }
@@ -188,9 +190,7 @@ define(
             }
         },
         command('all', 'Stop all servers.',
-            () => {
-                monitor.stopAll()
-            }
+            () => monitor.stopAll()
         ),
 
         command(':name', 'Stop the specified environment', (name, payload) => payload.stop(name))
@@ -209,13 +209,13 @@ define(
 
                 console.log('Restarting server...')
 
-                monitor.restart(environment)
+                monitor.restart(environment, option('t') || option('timeout'))
             }
 
             return {
                 log: () => {
-                    console.log('Using default environment.')
                     const env = manager.defaultEnv()
+                    console.log(`[Using ${env}]`)
                     if (env) {
                         restart(env)
                     }
@@ -236,8 +236,8 @@ define(
         command(':name', 'The environment to install to',
             name => ({
                 log: () => {
-                    console.log('Using default environment\n')
                     const env = manager.defaultEnv()
+                    console.log(`[Using ${env}]`)
                     if (env) {
                         manager.runCommand(name, env, option('b') || option('base'))
                     }
@@ -262,8 +262,8 @@ define(
 
             return {
                 log: () => {
-                    console.log('Using default environment')
                     const env = manager.defaultEnv()
+                    console.log(`[Using ${env}]`)
                     if (env) {
                         lint(env)
                     }
@@ -296,8 +296,8 @@ define(
 
                 return {
                     log: () => {
-                        console.log('Using default environment')
                         const env = manager.defaultEnv()
+                        console.log(`[Using ${env}]`)
                         if (env) {
                             install(name, env)
                         }
@@ -325,6 +325,7 @@ flags(
     ['-l, --logs', 'Directory to store logs when running processes'],
     ['-R, --reuse', 'Reuse an old process (including its runtime options and arguments)'],
     ['-b, --base', 'Reference an environments base'],
+    ['-t, --timeout', 'Set a timeout for operations'],
     ['--running', 'Filter by environments\' running status'],
     ['-d, --daemon', 'Start a server as a daemon'],
     ['--no-parse', 'When listing running environments, display a direct listing of running processes'],
