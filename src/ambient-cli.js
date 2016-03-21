@@ -231,7 +231,7 @@ define(
 )
 
 define(
-    command('run', 'Run a command on an environments root',
+    command('run', 'Run a command on an environments root relative root. -b, --base to run at projects real base',
         () => 'Please specify an environment name and a command',
         command(':name', 'The environment to install to',
             name => ({
@@ -239,7 +239,7 @@ define(
                     console.log('Using default environment\n')
                     const env = manager.defaultEnv()
                     if (env) {
-                        manager.runCommand(name, env)
+                        manager.runCommand(name, env, option('b') || option('base'))
                     }
                 },
                 payload: {
@@ -258,23 +258,23 @@ define(
 define(
     command('lint', 'Attempt to run "npm run lint" at an environments root',
         () => {
-            const run = name => manager.runCommand("npm run lint", name)
+            const lint = name => manager.runCommand("npm run lint", name)
 
             return {
                 log: () => {
                     console.log('Using default environment')
                     const env = manager.defaultEnv()
                     if (env) {
-                        run(env)
+                        lint(env)
                     }
                 },
                 payload: {
-                    run
+                    lint
                 }
             }
         },
         command(':name', 'The environment to install to',
-            (name, payload) => payload.run(name)
+            (name, payload) => payload.lint(name)
         )
     )
 )
@@ -324,6 +324,7 @@ flags(
     ['--dir', 'Explicitly set the root directory of an environment when adding or updating it'],
     ['-l, --logs', 'Directory to store logs when running processes'],
     ['-R, --reuse', 'Reuse an old process (including its runtime options and arguments)'],
+    ['-b, --base', 'Reference an environments base'],
     ['--running', 'Filter by environments\' running status'],
     ['-d, --daemon', 'Start a server as a daemon'],
     ['--no-parse', 'When listing running environments, display a direct listing of running processes'],

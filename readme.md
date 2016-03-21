@@ -20,7 +20,7 @@ Available commands:
   - start    Run a server
   - stop     Stop a server
   - restart  Restart ambient servers
-  - run      Run a command on an environments root
+  - run      Run a command on an environments relative root
   - lint     Attempt to run "npm run lint" at an environments root
   - install  Install a package using npm [or --jspm]
 

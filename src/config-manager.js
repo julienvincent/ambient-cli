@@ -207,10 +207,19 @@ export const configManager = () => {
         return mergeConfig(config)
     }
 
-    const runCommand = (command, name) => {
+    const runCommand = (command, name, base) => {
         try {
-            const locations = getEnvironmentLocations(name)
-            process.chdir(locations.root)
+            const environment = findEnvironment(name)
+            if (!environment) {
+                return interpret('ENOENV')
+            }
+
+            if (base) {
+                process.chdir(environment.path)
+            } else {
+                const locations = getEnvironmentLocations(name)
+                process.chdir(locations.root)
+            }
 
             const args = _.split(command, ' ')
 
