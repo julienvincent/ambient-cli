@@ -97,7 +97,7 @@ const monitor = {
         const _process = monitor.getProcess(name)
 
         if (_process && _process._isRunning) {
-            process.kill(_process.pid)
+            process.kill(_process.pid, _process.killSignal)
             return _process
         } else {
             return false
@@ -113,11 +113,25 @@ const monitor = {
         })
     },
 
-    restart: environment => {
+    restart: (environment, timeout) => {
         const _process = monitor.stop(environment)
-        process.nextTick(() => {
-            monitor.start(_process)
-        })
+        const attempts = (timeout || 10000) / 100
+
+        const start = (_process, attempt = 0) => {
+            const state = monitor.getProcess(_process.name)
+            if (state && state._isRunning) {
+                if (attempt <= attempts) {
+                    setTimeout(() => {
+                        start(_process, attempt + 1)
+                    }, 100)
+                } else {
+                    console.log(`Unable to stop process after ${(timeout || 10000) / 1000} seconds`)
+                }
+            } else {
+                monitor.createProcess(_process)
+            }
+        }
+        start(_process)
     },
 
     list: () => {
