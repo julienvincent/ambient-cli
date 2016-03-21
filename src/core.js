@@ -144,40 +144,42 @@ const nextCommand = (commands, index = 0) => {
 }
 
 export const init = () => {
+    let chain;
+    let difference;
     try {
-        const chain = nextCommand(commands)
-        const difference = _.difference(sequence, found)
+        chain = nextCommand(commands)
+        difference = _.difference(sequence, found)
 
         if (difference.length) {
             throw new Error(`Unknown command ${difference[0]}`)
         }
-
-        const run = (command, param) => {
-            const res = command.action(param)
-            let payload = res,
-                log = res
-
-            if (typeof res === 'object') {
-                payload = res.payload
-                log = res.log
-            }
-
-            if (command.next) {
-                run(command.next, payload)
-            } else {
-                if (log) {
-                    if (typeof log === 'function') {
-                        log()
-                    } else {
-                        console.log(log)
-                    }
-                }
-            }
-        }
-
-        run(chain)
     } catch (e) {
         console.log(`${e}\n\n`)
         help()
     }
+
+    const run = (command, param) => {
+        const res = command.action(param)
+        let payload = res,
+            log = res
+
+        if (typeof res === 'object') {
+            payload = res.payload
+            log = res.log
+        }
+
+        if (command.next) {
+            run(command.next, payload)
+        } else {
+            if (log) {
+                if (typeof log === 'function') {
+                    log()
+                } else {
+                    console.log(log)
+                }
+            }
+        }
+    }
+
+    run(chain)
 }

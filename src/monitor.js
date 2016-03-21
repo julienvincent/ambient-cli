@@ -46,6 +46,7 @@ const monitor = {
         }
 
         fs.ensureDirSync(opts.logDir)
+        if (opts.daemon) fs.writeFileSync(path.join(opts.logDir, `${opts.name}.log`), `\n${Date()}\n\n`, {flag: 'a'})
         const logs = fs.openSync(path.join(opts.logDir, `${opts.name}.log`), 'a')
 
         const _process = spawn(opts.command, [...opts.args, ..._.without(getBareOptions(), '-d', '--daemon')], {
