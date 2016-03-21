@@ -14,10 +14,10 @@ _.extractObject = array => {
 
 export const args = minimist(process.argv.slice(2))
 
-let sequence = args._
-let found = []
+const sequence = args._
+const found = []
 let commands = {}
-let availableFlags = []
+const availableFlags = []
 
 export const command = (name, man, action, ...chained) => {
     man = man || ''
@@ -69,7 +69,7 @@ export const help = () => {
     const createdChain = []
     const listCommands = (chain, commands) => {
         if (typeof chain === 'string' || !chain.length) {
-            const list = (commands, final) => _.forIn(commands, (value, key) => {
+            const list = commands => _.forIn(commands, (value, key) => {
                 createdChain.push([` - ${key}`, value.man])
             })
 
@@ -145,12 +145,10 @@ const nextCommand = (commands, index = 0) => {
 
 export const init = () => {
     let chain;
-    let difference;
     try {
         chain = nextCommand(commands)
-        difference = _.difference(sequence, found)
 
-        if (difference.length) {
+        if (_.difference(sequence, found).length) {
             throw new Error(`Unknown command ${difference[0]}`)
         }
     } catch (e) {

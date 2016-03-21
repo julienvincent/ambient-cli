@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { command, option, flags, define, help, init } from './core'
+import { command, option, flags, define, init } from './core'
 import { configManager } from './config-manager'
 import fs from 'fs'
 import monitor from './monitor'
@@ -12,7 +12,7 @@ define(
         () => 'A name must be provided',
         command(':name', 'The name of the ambient environment', name => {
             let dir = process.cwd()
-            let alias = option('alias') || option('a')
+            const alias = option('alias') || option('a')
             const forcedDir = option('dir')
 
             if (forcedDir) {
@@ -62,7 +62,7 @@ define(
 define(
     command('update', 'Update an environment (TOODO)',
         () => 'A name must be provided',
-        command(':name', "The name of the environment ambient must remove", name => {
+        command(':name', "The name of the environment ambient must remove", () => {
 
         })
     )

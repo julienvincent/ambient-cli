@@ -10,7 +10,7 @@ export const configManager = () => {
         environments: [],
         using: null
     }
-    let dir = `${os.homedir()}/.ambient/config.json`
+    const dir = `${os.homedir()}/.ambient/config.json`
 
     try {
         config = {
@@ -18,6 +18,7 @@ export const configManager = () => {
             ...JSON.parse(fs.readFileSync(dir, 'utf8'))
         }
     } catch (e) {
+        console.log(`Error attempting to read config file: ${e}`)
     }
 
     const getEnvironmentLocations = name => {
@@ -143,7 +144,7 @@ export const configManager = () => {
 
     const addEnvironment = (name, alias, path, force, use) => {
         const environment = findEnvironment(name, alias)
-        let newEnvironment = {
+        const newEnvironment = {
             name: name,
             alias: alias,
             path: path
