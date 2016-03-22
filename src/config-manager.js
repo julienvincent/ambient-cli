@@ -142,12 +142,30 @@ export const configManager = () => {
         }
     }
 
-    const addEnvironment = (name, alias, path, force, use) => {
+    const addEnvironment = (env) => {
+        const { name, alias, use, path, force, update, newName } = env
         const environment = findEnvironment(name, alias)
         const newEnvironment = {
             name: name,
             alias: alias,
             path: path
+        }
+
+        if (update) {
+            if (!environment) {
+                return 'ENOENV'
+            }
+
+            _.forEach(config.environments, (env, index) => {
+                if (env == environment) {
+                    config.environments[index].name = newName || config.environments[index].name
+                    config.environments[index].alias = alias || config.environments[index].alias
+                    config.environments[index].path = path || config.environments[index].path
+                }
+            })
+
+            if (use) config.using = newEnvironment.name
+            return mergeConfig(config)
         }
 
         if (environment) {

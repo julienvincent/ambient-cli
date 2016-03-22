@@ -29,7 +29,13 @@ define(
                 }
             }
 
-            if (manager.interpret(manager.addEnvironment(name, alias, dir, option('force') || option('f'), option('use') || option('u')))) {
+            if (manager.interpret(manager.addEnvironment({
+                        name,
+                        alias,
+                        path: dir,
+                        force: option('force') || option('f'),
+                        use: option('use') || option('u')
+                    }))) {
                 return `Added environment ${name}`
             }
         })
@@ -62,8 +68,36 @@ define(
 define(
     command('update', 'Update an environment (TOODO)',
         () => 'A name must be provided',
-        command(':name', "The name of the environment ambient must remove", () => {
+        command(':name', "The name of the environment ambient must remove", name => {
+            let dir = process.cwd()
+            const alias = option('alias') || option('a')
+            const forcedDir = option('dir')
 
+            if (forcedDir) {
+                try {
+                    const stats = fs.lstatSync(forcedDir);
+                    if (stats.isDirectory()) {
+                        dir = forcedDir
+                    } else {
+                        return `The path '${forcedDir}' is not a directory`
+                    }
+                }
+                catch (e) {
+                    return `The path '${forcedDir}' does not exist`
+                }
+            }
+
+            if (manager.interpret(manager.addEnvironment({
+                    name,
+                    newName: option('name'),
+                    alias,
+                    path: dir,
+                    force: option('force') || option('f'),
+                    use: option('use') || option('u'),
+                    update: true
+                }))) {
+                return `updated environment ${name}`
+            }
         })
     )
 )
@@ -360,6 +394,7 @@ flags(
     ['-a, --alias', 'Set an alias name for the environment'],
     ['-u, --use', 'Set this environment as default.'],
     ['-f, --force', 'Force an action to happen. Commonly used to overwrite an existing environment'],
+    ['--name', 'Specify a new name when updating an environment'],
     ['--dir', 'Explicitly set the root directory of an environment when adding or updating it'],
     ['-l, --logs', 'Directory to store logs when running processes'],
     ['-R, --reuse', 'Reuse an old process (including its runtime options and arguments)'],
