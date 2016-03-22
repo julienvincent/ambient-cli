@@ -317,6 +317,45 @@ define(
     )
 )
 
+define(
+    command('logs', 'display logs for a given process',
+        () => {
+            const logs = name => {
+                const environment = manager.findEnvironment(name)
+
+                if (!environment) {
+                    return manager.interpret('ENOENV')
+                }
+
+                const _process = monitor.getProcess(environment.name)
+                if (_process) {
+                    manager.runCommand(`cat ${path.join(_process.logDir, `${environment.name}.log`)}`, environment.name)
+                } else {
+                    manager.runCommand(`cat ${path.join(os.homedir(), `.ambient/logs/${environment.name}.log`)}`, environment.name)
+                }
+            }
+
+            return {
+                log: () => {
+                    const env = manager.defaultEnv()
+                    console.log(`[Using ${env}]`)
+                    if (env) {
+                        logs(env)
+                    }
+                },
+
+                payload: {
+                    logs
+                }
+            }
+        },
+
+        command(':name', 'The name of the environment',
+            (name, payload) => payload.logs(name)
+        )
+    )
+)
+
 flags(
     ['-a, --alias', 'Set an alias name for the environment'],
     ['-u, --use', 'Set this environment as default.'],
