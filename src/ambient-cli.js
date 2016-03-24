@@ -6,7 +6,7 @@ import monitor from './monitor'
 import log from './logger'
 const manager = configManager()
 import path from 'path'
-import prompt from 'prompt'
+import prompt from './prompt'
 import _ from 'lodash'
 
 define(
@@ -272,17 +272,9 @@ define(
             const run = (name, command, interactive) => {
                 if (interactive) {
                     const ask = () => {
-                        prompt.message = ''
-                        prompt.delimiter = ''
-                        prompt.start()
-
-                        prompt.get({
-                            description: `\x1b[32m${process.cwd()}\x1b[31m)>`,
-                            name: 'input'
-                        }, (err, result) => {
+                        prompt(process.cwd(), (err, result) => {
                             if (!err) {
-                                const {input} = result
-                                const args = _.split(input, ' ')
+                                const args = _.split(result, ' ')
                                 const p = args[0]
                                 if (p == 'cd') {
                                     process.chdir(args[1])
@@ -291,8 +283,12 @@ define(
                                 if (p == 'exit') {
                                     return
                                 }
+                                if (p == 'ambient') {
+                                    console.log('\x1b[31mCannot run ambient from within an ambient process.')
+                                    return ask()
+                                }
 
-                                manager.runCommand(input, name, null, true, ask)
+                                manager.runCommand(result, name, null, true, ask)
                             }
                         });
                     }
