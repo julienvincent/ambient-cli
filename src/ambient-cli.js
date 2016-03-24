@@ -465,6 +465,41 @@ define(
             }
         },
 
+        command('clear', 'Clear logs',
+            () => {
+                const clear = name => {
+                    const environment = manager.findEnvironment(name)
+
+                    if (!environment) {
+                        return manager.interpret('ENOENV')
+                    }
+
+                    const _process = monitor.getProcess(environment.name)
+                    const dir = _process ? _process.logDir : path.join(os.homedir(), '.ambient/logs')
+
+                    fs.writeFileSync(path.join(dir, `${environment.name}.log`), `Cleared on ${Date()}\n`, 'utf8')
+                    console.log('Logs cleared')
+                }
+
+                return {
+                    log: () => {
+                        const env = manager.defaultEnv()
+                        console.log(`[Using ${env}]`)
+                        if (env) {
+                            clear(env)
+                        }
+                    },
+                    payload: {
+                        clear
+                    }
+                }
+            },
+
+            command(':name', 'The name of the environment',
+                (name, payload) => payload.clear(name)
+            )
+        ),
+
         command(':name', 'The name of the environment',
             (name, payload) => payload.logs(name)
         )
