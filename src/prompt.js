@@ -1,51 +1,7 @@
 import path from 'path'
 import fs from 'fs-extra'
 import os from 'os'
-
-const _hist = (file, max) => {
-    let HIST = [];
-
-    try {
-        HIST = fs.readFileSync(file, {encoding: 'utf8'})
-            .split('\n').slice(0, -1);
-    } catch (e) {
-    }
-
-    HIST = HIST.slice(HIST.length - max, HIST.length);
-
-    var ix = HIST.length;
-
-    return {
-        atStart: function () {
-            return ix <= 0;
-        },
-        atPenultimate: function () {
-            return ix === HIST.length - 1;
-        },
-        pastEnd: function () {
-            return ix >= HIST.length;
-        },
-        atEnd: function () {
-            return ix === HIST.length;
-        },
-        prev: function () {
-            return HIST[--ix];
-        },
-        next: function () {
-            return HIST[++ix];
-        },
-        reset: function () {
-            ix = HIST.length;
-        },
-        push: function (str) {
-            if (~HIST.indexOf(str)) return
-            HIST.push(str)
-        },
-        save: function () {
-            fs.writeFileSync(file, HIST.join('\n') + '\n');
-        }
-    };
-}
+import _ from 'lodash'
 
 const prompt = (label, opts, cb) => {
     if (typeof opts === 'function') {
@@ -56,76 +12,111 @@ const prompt = (label, opts, cb) => {
         }
 
     try {
-        let insert = 0, savedinsert = 0, res, i, savedstr;
+        let insert = 0, savedinsert = 0, res, i, savedstr
         const _path = opts.file || path.join(os.homedir(), '.ambient/history')
         fs.ensureFileSync(_path)
-        let history = _hist(_path, 1000)
+
+        let HIST = fs.readFileSync(_path, 'utf8').split('\n').slice(0, -1);
+        HIST = HIST.slice(HIST.length - 1000, HIST.length);
+
+        let ix = HIST.length;
+
+        let history = {
+            atStart: function () {
+                return ix <= 0;
+            },
+            atPenultimate: function () {
+                return ix === HIST.length - 1;
+            },
+            pastEnd: function () {
+                return ix >= HIST.length;
+            },
+            atEnd: function () {
+                return ix === HIST.length;
+            },
+            prev: function () {
+                return HIST[--ix];
+            },
+            next: function () {
+                return HIST[++ix];
+            },
+            reset: function () {
+                ix = HIST.length;
+            },
+            push: function (str) {
+                if (_.find(HIST, (entry, index) => entry == str && index == HIST.length - 1)) return
+                HIST.push(str)
+            },
+            save: function () {
+                fs.writeFileSync(_path, HIST.join('\n') + '\n');
+            }
+        }
         label = `\x1b[32m${label}\x1b[31m)>\x1b[0m `
 
-        const fd = fs.openSync('/dev/tty', 'rs');
+        const fd = fs.openSync('/dev/tty', 'rs')
 
-        var wasRaw = process.stdin.isRaw;
+        var wasRaw = process.stdin.isRaw
         if (!wasRaw) {
-            process.stdin.setRawMode(true);
+            process.stdin.setRawMode(true)
         }
 
-        const buffer = new Buffer(3);
-        let str = '', char, read;
+        const buffer = new Buffer(3)
+        let str = '', char, read
 
-        savedstr = '';
+        savedstr = ''
 
-        process.stdout.write(label);
+        process.stdout.write(label)
 
-        let cycle = 0;
-        let prevComplete;
+        let cycle = 0
+        let prevComplete
 
         while (true) {
-            read = fs.readSync(fd, buffer, 0, 3);
+            read = fs.readSync(fd, buffer, 0, 3)
             if (read == 3) {
                 switch (buffer.toString()) {
-                    case '\u001b[A': // up
-                        if (history.atStart()) break;
+                    case '\u001b[A':
+                        if (history.atStart()) break
 
                         if (history.atEnd()) {
-                            savedstr = str;
-                            savedinsert = insert;
+                            savedstr = str
+                            savedinsert = insert
                         }
-                        str = history.prev();
-                        insert = str.length;
-                        process.stdout.write('\u001b[2K\u001b[0G' + label + str);
-                        break;
-                    case '\u001b[B': //down arrow
-                        if (history.pastEnd()) break;
+                        str = history.prev()
+                        insert = str.length
+                        process.stdout.write('\u001b[2K\u001b[0G' + label + str)
+                        break
+                    case '\u001b[B':
+                        if (history.pastEnd()) break
 
                         if (history.atPenultimate()) {
-                            str = savedstr;
-                            insert = savedinsert;
-                            history.next();
+                            str = savedstr
+                            insert = savedinsert
+                            history.next()
                         } else {
-                            str = history.next();
-                            insert = str.length;
+                            str = history.next()
+                            insert = str.length
                         }
-                        process.stdout.write('\u001b[2K\u001b[0G' + label + str);
-                        break;
+                        process.stdout.write('\u001b[2K\u001b[0G' + label + str)
+                        break
                 }
-                continue;
+                continue
             }
             char = buffer[read - 1];
 
-            if (char == 3) { // ctrl-c
-                process.stdout.write('\n');
-                fs.closeSync(fd);
-                process.stdin.setRawMode(wasRaw);
+            if (char == 3) {
+                process.stdout.write('\n')
+                fs.closeSync(fd)
+                process.stdin.setRawMode(wasRaw)
 
-                return null;
+                return null
             }
             
             if (char == 13) {
-                fs.closeSync(fd);
-                if (!history) break;
-                if (str.length) history.push(str);
-                history.reset();
-                break;
+                fs.closeSync(fd)
+                if (!history) break
+                if (str.length) history.push(str)
+                history.reset()
+                break
             }
 
             if (char == 127) { //backspace
@@ -140,22 +131,22 @@ const prompt = (label, opts, cb) => {
                 insert++
             }
 
-            process.stdout.write('\u001b[s');
+            process.stdout.write('\u001b[s')
             if (insert == str.length) {
-                process.stdout.write('\u001b[2K\u001b[0G' + label + str);
+                process.stdout.write('\u001b[2K\u001b[0G' + label + str)
             } else {
-                process.stdout.write('\u001b[2K\u001b[0G' + label + str);
+                process.stdout.write('\u001b[2K\u001b[0G' + label + str)
             }
-            process.stdout.write('\u001b[u');
-            process.stdout.write('\u001b[1C');
+            process.stdout.write('\u001b[u')
+            process.stdout.write('\u001b[1C')
 
         }
 
         process.stdout.write('\n')
-        process.stdin.setRawMode(wasRaw);
+        process.stdin.setRawMode(wasRaw)
         history.save()
 
-        return cb(null, str || '');
+        return cb(null, str || '')
     } catch (e) {
         return cb(e)
     }

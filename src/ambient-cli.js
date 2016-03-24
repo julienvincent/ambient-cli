@@ -8,6 +8,7 @@ const manager = configManager()
 import path from 'path'
 import prompt from './prompt'
 import _ from 'lodash'
+import os from 'os'
 
 define(
     command('add', 'Add an ambient environment to list of know environments',
@@ -277,7 +278,11 @@ define(
                                 const args = _.split(result, ' ')
                                 const p = args[0]
                                 if (p == 'cd') {
-                                    process.chdir(args[1])
+                                    if (args[1]) {
+                                        process.chdir(args[1])
+                                    } else {
+                                        process.chdir(os.homedir())
+                                    }
                                     return ask()
                                 }
                                 if (p == 'exit') {
@@ -292,7 +297,7 @@ define(
                                 }
 
                                 manager.runCommand(result, name, null, true, ask)
-                            }
+                            } else console.log(err)
                         });
                     }
                     const environment = manager.findEnvironment(name)
