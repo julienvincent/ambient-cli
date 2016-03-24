@@ -226,7 +226,7 @@ export const configManager = () => {
         return mergeConfig(config)
     }
 
-    const runCommand = (command, name, base) => {
+    const runCommand = (command, name, base, noChange, cb) => {
         try {
             const environment = findEnvironment(name)
             if (!environment) {
@@ -235,16 +235,18 @@ export const configManager = () => {
 
             if (base) {
                 process.chdir(environment.path)
-            } else {
+            } else if (!noChange) {
                 const locations = getEnvironmentLocations(name)
                 process.chdir(locations.root)
             }
 
             const args = _.split(command, ' ')
 
-            spawn(args[0], _.without(args, args[0]), {
+            const _process = spawn(args[0], _.without(args, args[0]), {
                 stdio: 'inherit'
             })
+            
+            if (cb) _process.on('close', cb)
         } catch (e) {
             console.log(e)
         }

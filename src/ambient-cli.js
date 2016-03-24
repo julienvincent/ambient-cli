@@ -6,6 +6,8 @@ import monitor from './monitor'
 import log from './logger'
 const manager = configManager()
 import path from 'path'
+import prompt from 'prompt'
+import _ from 'lodash'
 
 define(
     command('add', 'Add an ambient environment to list of know environments',
@@ -30,12 +32,12 @@ define(
             }
 
             if (manager.interpret(manager.addEnvironment({
-                        name,
-                        alias,
-                        path: dir,
-                        force: option('force') || option('f'),
-                        use: option('use') || option('u')
-                    }))) {
+                    name,
+                    alias,
+                    path: dir,
+                    force: option('force') || option('f'),
+                    use: option('use') || option('u')
+                }))) {
                 return `Added environment ${name}`
             }
         })
@@ -266,24 +268,99 @@ define(
 
 define(
     command('run', 'Run a command on an environments root relative root. -b, --base to run at projects real base',
-        () => 'Please specify an environment name and a command',
-        command(':name', 'The environment to install to',
-            name => ({
+        () => {
+            const run = (name, command, interactive) => {
+                if (interactive) {
+                    const ask = () => {
+                        prompt.message = ''
+                        prompt.delimiter = ''
+                        prompt.start()
+
+                        prompt.get({
+                            description: `\x1b[32m${process.cwd()}\x1b[31m)>`,
+                            name: 'input'
+                        }, (err, result) => {
+                            if (!err) {
+                                const {input} = result
+                                const args = _.split(input, ' ')
+                                const p = args[0]
+                                if (p == 'cd') {
+                                    process.chdir(args[1])
+                                    return ask()
+                                }
+                                if (p == 'exit') {
+                                    return
+                                }
+
+                                manager.runCommand(input, name, null, true, ask)
+                            }
+                        });
+                    }
+                    const environment = manager.findEnvironment(name)
+
+                    if (!environment) {
+                        return manager.interpret('ENOENV')
+                    }
+
+                    process.chdir(environment.path)
+                    ask()
+                } else {
+                    manager.runCommand(command, name, option('b') || option('base'))
+                }
+            }
+
+            return {
                 log: () => {
-                    const env = manager.defaultEnv()
-                    console.log(`[Using ${env}]`)
-                    if (env) {
-                        manager.runCommand(name, env, option('b') || option('base'))
+                    if (option('i') || option('interactive')) {
+                        const env = manager.defaultEnv()
+                        console.log(`[Using ${env}]`)
+                        if (env) run(env, null, true)
+                    } else {
+                        console.log('Please specify an environment name and a command')
                     }
                 },
                 payload: {
-                    run: manager.runCommand,
+                    run
+                }
+            }
+        },
+        command('i:interactive', 'Interactively run commands at an environment',
+            (name, payload) => ({
+                log: () => {
+                    const env = manager.defaultEnv()
+                    console.log(`[Using ${env}]`)
+                    if (env) payload.run(env, null, true)
+                },
+                payload: {
+                    run: payload.run
+                }
+            }),
+
+            command(':name', 'The name of the environment to run the commands at',
+                (name, payload) => payload.run(name, null, true)
+            )
+        ),
+
+        command(':name', 'The environment to install to',
+            (name, payload) => ({
+                log: () => {
+                    let env = manager.findEnvironment(name)
+                    if (!env) {
+                        env = manager.defaultEnv()
+                        console.log(`[Using ${env}]`)
+                    } else {
+                        env = env.name
+                    }
+                    if (env) payload.run(env, name, option('i') || option('interactive'))
+                },
+                payload: {
+                    run: payload.run,
                     name
                 }
             }),
 
             command(':command', 'The command to run',
-                (command, payload) => payload.run(command, payload.name)
+                (command, payload) => payload.run(payload.name, command, option('i') || option('interactive'))
             )
         )
     )

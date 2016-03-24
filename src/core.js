@@ -127,7 +127,7 @@ const nextCommand = (commands, index = 0) => {
             next: null
         }
     } else {
-        const command = _.find(commands, (value, key) => key == sequence[index] || key.substring(0, 1) == ':')
+        const command = _.find(commands, (value, key) => key == sequence[index] || key.substring(0, 1) == ':' || _.find(_.split(key, ':'), key => key == sequence[index]))
 
         if (command) {
             found.push(sequence[index])
