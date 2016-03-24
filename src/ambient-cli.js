@@ -287,6 +287,9 @@ define(
                                     console.log('\x1b[31mCannot run ambient from within an ambient process.')
                                     return ask()
                                 }
+                                if (p == '') {
+                                    return ask()
+                                }
 
                                 manager.runCommand(result, name, null, true, ask)
                             }
@@ -472,13 +475,12 @@ flags(
     ['-l, --logs', 'Directory to store logs when running processes'],
     ['-R, --reuse', 'Reuse an old process (including its runtime options and arguments)'],
     ['-b, --base', 'Reference an environments base'],
+    ['-i, --interactive', 'Run a command in interactive mode'],
     ['-t, --timeout', 'Set a timeout for operations'],
     ['--running', 'Filter by environments\' running status'],
     ['-d, --daemon', 'Start a server as a daemon'],
     ['--no-parse', 'When listing running environments, display a direct listing of running processes'],
-    ['--no-save', 'Install a module without saving it'],
-    ['--development, --dev', 'Start a server in development'],
-    ['--production, --prod', 'Start a server in production']
+    ['--no-save', 'Install a module without saving it']
 )
 
 init()

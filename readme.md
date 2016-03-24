@@ -5,7 +5,7 @@ Cli tool for interacting with development environments from anywhere
 #### Command list
 
 ```
-CLI tool for interacting with development environments from anywhere.
+Cli tool for interacting with development environments from anywhere.
 
 Usage:
 ambient [command] --flags
@@ -15,30 +15,32 @@ Available commands:
   - add      Add an ambient environment to list of know environments
   - remove   Remove an environment from ambients known environments
   - update   Update an environment (TOODO)
-  - list     List all known environments and their status
+  - list     List all known environments
   - use      Specify a default environment
   - start    Run a server
-  - stop     Stop a server
+  - stop     Stop ambient servers
   - restart  Restart ambient servers
-  - run      Run a command on an environments relative root
+  - run      Run a command on an environments root relative root. -b, --base to run at projects real base
   - lint     Attempt to run "npm run lint" at an environments root
   - install  Install a package using npm [or --jspm]
+  - logs     display logs for a given process
 
 Available flags:
 
- -a, --alias           Set an alias name for the environment
- -u, --use             Set this environment as default.
- -f, --force           Force an action to happen. Commonly used to overwrite an existing environment
- --dir                 Explicitly set the root directory of an environment when adding or updating it
- -l, --logs            Directory to store logs when running processes
- -R, --reuse           Reuse an old process (including its runtime options and arguments)
- --running             Filter by environments' running status
- -d, --daemon          Start a server as a daemon
- --no-parse            When listing running environments, display a direct listing of running processes
- --bundle              Bundle the environment instead of starting its server
- --development, --dev  Start a server in development
- --production, --prod  Start a server in production
- --port, -p            Specify the port a server must start on
+ -a, --alias        Set an alias name for the environment
+ -u, --use          Set this environment as default.
+ -f, --force        Force an action to happen. Commonly used to overwrite an existing environment
+ --name             Specify a new name when updating an environment
+ --dir              Explicitly set the root directory of an environment when adding or updating it
+ -l, --logs         Directory to store logs when running processes
+ -R, --reuse        Reuse an old process (including its runtime options and arguments)
+ -b, --base         Reference an environments base
+ -i, --interactive  Run a command in interactive mode
+ -t, --timeout      Set a timeout for operations
+ --running          Filter by environments' running status
+ -d, --daemon       Start a server as a daemon
+ --no-parse         When listing running environments, display a direct listing of running processes
+ --no-save          Install a module without saving it
 ```
 
 ## Specifying custom runtime settings.
