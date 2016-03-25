@@ -66,7 +66,7 @@ const monitor = {
         }
     },
 
-    start: (environment, daemon, logDir, reuse, timeout) => {
+    start: (environment, daemon, logDir, reuse) => {
         if (environment._isProcess) {
             monitor.createProcess(environment)
         } else {

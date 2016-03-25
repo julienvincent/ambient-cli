@@ -12,16 +12,16 @@ const prompt = (label, opts, cb) => {
         }
 
     try {
-        let insert = 0, savedinsert = 0, res, i, savedstr
+        let insert = 0, savedinsert = 0
         const _path = opts.file || path.join(os.homedir(), '.ambient/history')
         fs.ensureFileSync(_path)
 
-        let HIST = fs.readFileSync(_path, 'utf8').split('\n').slice(0, -1);
-        HIST = HIST.slice(HIST.length - 1000, HIST.length);
+        const data = fs.readFileSync(_path, 'utf8')
+        const HIST = (data.split('\n').slice(0, -1)).slice(data.length - 1000, data.length)
 
         let ix = HIST.length;
 
-        let history = {
+        const history = {
             atStart: function () {
                 return ix <= 0;
             },
@@ -48,27 +48,26 @@ const prompt = (label, opts, cb) => {
                 HIST.push(str)
             },
             save: function () {
-                fs.writeFileSync(_path, HIST.join('\n') + '\n');
+                fs.writeFileSync(_path, `${HIST.join('\n')}\n`);
             }
         }
-        label = `\x1b[32m${label}\x1b[31m)>\x1b[0m `
+        const formattedLabel = `\x1b[31m(\x1b[32m${label}\x1b[31m)\x1b[0m `
+        const labelLength = label.length + 3
 
         const fd = fs.openSync('/dev/tty', 'rs')
 
-        var wasRaw = process.stdin.isRaw
+        const wasRaw = process.stdin.isRaw
         if (!wasRaw) {
             process.stdin.setRawMode(true)
         }
 
         const buffer = new Buffer(3)
-        let str = '', char, read
+        let str = ''
+        let read = null
 
-        savedstr = ''
+        let savedstr = ''
 
-        process.stdout.write(label)
-
-        let cycle = 0
-        let prevComplete
+        process.stdout.write(formattedLabel)
 
         while (true) {
             read = fs.readSync(fd, buffer, 0, 3)
@@ -83,7 +82,7 @@ const prompt = (label, opts, cb) => {
                         }
                         str = history.prev()
                         insert = str.length
-                        process.stdout.write('\u001b[2K\u001b[0G' + label + str)
+                        process.stdout.write(`\u001b[2K\u001b[0G${formattedLabel}${str}`)
                         break
                     case '\u001b[B':
                         if (history.pastEnd()) break
@@ -96,22 +95,23 @@ const prompt = (label, opts, cb) => {
                             str = history.next()
                             insert = str.length
                         }
-                        process.stdout.write('\u001b[2K\u001b[0G' + label + str)
+                        process.stdout.write(`\u001b[2K\u001b[0G${formattedLabel}${str}`)
                         break
                     case '\u001b[D':
-                        const before = insert;
-                        insert = (--insert < 0) ? 0 : insert;
-                        if (before - insert)
-                            process.stdout.write('\u001b[1D');
-                        break;
+                        const before = insert
+                        insert = (--insert < 0) ? 0 : insert
+                        if (before - insert) {
+                            process.stdout.write('\u001b[1D')
+                        }
+                        break
                     case '\u001b[C':
                         insert = (++insert > str.length) ? str.length : insert;
-                        process.stdout.write('\u001b[' + (insert + label.length + 1) + 'G');
+                        process.stdout.write(`\u001b[${insert + labelLength + 1}G`);
                         break;
                 }
                 continue
             }
-            char = buffer[read - 1];
+            const char = buffer[read - 1];
 
             if (char == 3) {
                 process.stdout.write('\n')
@@ -129,7 +129,7 @@ const prompt = (label, opts, cb) => {
                 break
             }
 
-            if (char == 127) { //backspace
+            if (char == 127) {
                 if (!insert) continue
                 str = str.slice(0, insert - 1) + str.slice(insert)
                 insert--
@@ -142,14 +142,9 @@ const prompt = (label, opts, cb) => {
             }
 
             process.stdout.write('\u001b[s')
-            if (insert == str.length) {
-                process.stdout.write('\u001b[2K\u001b[0G' + label + str)
-            } else {
-                process.stdout.write('\u001b[2K\u001b[0G' + label + str)
-            }
+            process.stdout.write(`\u001b[2K\u001b[0G${formattedLabel}${str}`)
             process.stdout.write('\u001b[u')
             process.stdout.write('\u001b[1C')
-
         }
 
         process.stdout.write('\n')

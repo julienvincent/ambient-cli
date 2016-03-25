@@ -16,7 +16,8 @@
     "prefer-spread": 1,
     "prefer-template": 1,
     "no-constant-condition": 0,
-    "no-console": 0
+    "no-console": 0,
+    "no-case-declarations": 0
   },
   "plugins": [
     "babel"
