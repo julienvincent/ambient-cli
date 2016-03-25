@@ -403,9 +403,8 @@ define(
                 const install = (packageName, name) => {
                     const packageManager = option('jspm') ? 'jspm' : 'npm'
                     let save = ' --save'
-                    if (option('save') === false) save = ''
-                    if ('save-dev') save = ' --save-dev'
-                    if (option('jspm')) save = ''
+                    if (option('save-dev')) save = ' --save-dev'
+                    if (option('save') === false || option('jspm')) save = ''
                     manager.runCommand(`${packageManager} install ${packageName}${save}`, name)
                 }
 
