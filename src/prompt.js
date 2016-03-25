@@ -2,6 +2,7 @@ import path from 'path'
 import fs from 'fs-extra'
 import os from 'os'
 import _ from 'lodash'
+import { execSync } from 'child_process'
 
 const prompt = (label, opts, cb) => {
     if (typeof opts === 'function') {
@@ -51,8 +52,26 @@ const prompt = (label, opts, cb) => {
                 fs.writeFileSync(_path, `${HIST.join('\n')}\n`);
             }
         }
-        const formattedLabel = `\x1b[31m(\x1b[32m${label}\x1b[31m)\x1b[0m `
-        const labelLength = label.length + 3
+        let formattedLabel = `\x1b[1m\x1b[31m(\x1b[32m${label}\x1b[31m)\x1b[0m `
+        let labelLength = label.length + 3
+
+        try {
+            const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString('utf8').replace('\n', '')
+            formattedLabel += `\x1b[1m\x1b[36m${currentBranch}\x1b[0m `
+            labelLength += currentBranch.length + 1
+
+            try {
+                const isDirty = execSync('[[ $(git diff --shortstat 2> /dev/null | tail -n1) != "" ]] && echo "*"')
+                if (isDirty) {
+                    formattedLabel += '\x1b[1m\x1b[33m✗\x1b[0m '
+                    labelLength += 2
+                }
+            } catch(e) {
+                // ignore
+            }
+        } catch (e) {
+            // ignore
+        }
 
         const fd = fs.openSync('/dev/tty', 'rs')
 
