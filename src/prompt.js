@@ -98,6 +98,16 @@ const prompt = (label, opts, cb) => {
                         }
                         process.stdout.write('\u001b[2K\u001b[0G' + label + str)
                         break
+                    case '\u001b[D':
+                        const before = insert;
+                        insert = (--insert < 0) ? 0 : insert;
+                        if (before - insert)
+                            process.stdout.write('\u001b[1D');
+                        break;
+                    case '\u001b[C':
+                        insert = (++insert > str.length) ? str.length : insert;
+                        process.stdout.write('\u001b[' + (insert + label.length + 1) + 'G');
+                        break;
                 }
                 continue
             }
@@ -110,7 +120,7 @@ const prompt = (label, opts, cb) => {
 
                 return null
             }
-            
+
             if (char == 13) {
                 fs.closeSync(fd)
                 if (!history) break

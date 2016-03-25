@@ -242,7 +242,32 @@ export const configManager = () => {
 
             const args = _.split(command, ' ')
 
-            const _process = spawn(args[0], _.without(args, args[0]), {
+            const formatted = []
+            let seq = null
+            _.forEach(args, split => {
+                if (!seq) {
+                    if (split.substring(0, 1) == '"') {
+                        seq = ''
+                        seq += split
+                        if (split.substring(split.length - 1) == '"') {
+                            formatted.push(seq)
+                            seq = null
+                        }
+                    } else {
+                        formatted.push(split)
+                    }
+                } else {
+                    if (split.substring(split.length - 1) == '"') {
+                        seq += ` ${split}`
+                        formatted.push(seq)
+                        seq = null
+                    } else {
+                        seq += ` ${split}`
+                    }
+                }
+            })
+
+            const _process = spawn(formatted[0], _.without(formatted, formatted[0]), {
                 stdio: 'inherit'
             })
             
