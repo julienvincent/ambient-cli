@@ -273,7 +273,23 @@ define(
             const run = (name, command, interactive) => {
                 if (interactive) {
                     const ask = () => {
-                        prompt(process.cwd(), (err, result) => {
+                        const getLabel = () => {
+                            const cwd = process.cwd()
+                            const hd = os.homedir()
+                            let label = cwd
+                            if (cwd.indexOf(hd) > -1) {
+                                label = cwd.replace(hd, '')
+                                if (label == '') {
+                                    label = '~/'
+                                } else {
+                                    label = `~${label}`
+                                }
+                            }
+
+                            return label
+                        }
+
+                        prompt(getLabel(), (err, result) => {
                             if (!err) {
                                 const args = _.split(result, ' ')
                                 const p = args[0]
