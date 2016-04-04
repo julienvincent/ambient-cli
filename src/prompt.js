@@ -61,13 +61,10 @@ const prompt = (label, opts, cb) => {
             labelLength += currentBranch.length + 1
 
             try {
-                const isDirty = execSync('[[ $(git diff --shortstat 2> /dev/null | tail -n1) != "" ]] && echo "*"')
-                if (isDirty) {
-                    formattedLabel += '\x1b[1m\x1b[33m✗\x1b[0m '
-                    labelLength += 2
-                }
-            } catch(e) {
-                // ignore
+                const isClean = execSync('[[ -z $(git status -s) ]]')
+            } catch (e) {
+                formattedLabel += '\x1b[1m\x1b[33m✗\x1b[0m '
+                labelLength += 2
             }
         } catch (e) {
             // ignore
