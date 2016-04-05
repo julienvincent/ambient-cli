@@ -133,8 +133,8 @@ const nextCommand = (commands, index = 0) => {
             found.push(sequence[index])
             index++
 
-            let name = _.join(_.map(_.pickBy(commands, _command => _command == command), (_command, key) => key))
-            let args = []
+            const name = _.join(_.map(_.pickBy(commands, _command => _command == command), (_command, key) => key))
+            const args = []
 
             if (name.indexOf(']') !== -1) {
                 for (let i = index; i < sequence.length; i++) {
