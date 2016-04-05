@@ -4,6 +4,7 @@ import _ from 'lodash'
 import path from 'path'
 import { spawn } from 'child_process'
 import monitor from './monitor'
+import { getBareOptions } from './core'
 
 export const configManager = () => {
     let config = {
@@ -233,7 +234,7 @@ export const configManager = () => {
 
     const findCommands = name => {
         const locations = getEnvironmentLocations(name)
-        
+
         return {
             ambient: _.map(locations.ambient.commands, (command, key) => key),
             package: _.map(locations.package.scripts, (script, key) => key)
@@ -300,7 +301,7 @@ export const configManager = () => {
                 if (found.root) {
                     root = path.join(environment.path, found.root)
                 }
-                
+
                 _command = _.map(formatted, command => ({
                     args: _.without(command, command[0]),
                     root,
@@ -395,7 +396,7 @@ export const configManager = () => {
                     relative = null
                 }
 
-                const _process = spawn(_command, _.without(fullCommand, _command), {
+                const _process = spawn(_command, [..._.without(fullCommand, _command), ...getBareOptions()], {
                     stdio: 'inherit'
                 })
 
