@@ -79,15 +79,27 @@ const monitor = {
             }
 
             const locations = configManager().getEnvironmentLocations(environment)
-            const args = _.split(locations.ambient.command, ' ')
+            let args = _.split(locations.ambient.command || 'node', ' ')
             const root = locations.primaryRoot
+
+            if (!locations.ambient.command && !locations.ambient.script) {
+                args = ['node', locations.package.main || '']
+            }
+
+            if (locations.ambient.logs) {
+                if (locations.ambient.logs.substring(0, 1) == '/') {
+                    logDir = locations.ambient.logs
+                } else {
+                    logDir = path.join(root, locations.ambient.logs)
+                }
+            }
 
             monitor.createProcess({
                 command: args[0] || 'node',
-                args: _.filter([locations.script || null, ..._.without(args, args[0])], ...locations.ambient.args, arg => arg !== null),
+                args: _.filter([locations.ambient.script || null, ..._.without(args, args[0]), ...locations.ambient.args || []], arg => arg !== null),
                 name: environment.name,
                 root,
-                logDir: logDir || (locations.ambient.logs ? path.join(root, locations.ambient.logs) : false) || path.join(os.homedir(), '.ambient/logs'),
+                logDir: logDir || path.join(os.homedir(), '.ambient/logs'),
                 daemon
             })
         }
