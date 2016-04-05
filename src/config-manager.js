@@ -288,9 +288,14 @@ export const configManager = () => {
 
             if (found.plainCommand) {
                 const formatted = formatCommandString(found.plainCommand)
+                let root = found.root
+                if (found.root) {
+                    root = path.join(environment.path, found.root)
+                }
+                
                 _command = _.map(formatted, command => ({
                     args: _.without(command, command[0]),
-                    root: locations.primaryRoot,
+                    root,
                     script: null,
                     command: command[0]
                 }))

@@ -51,7 +51,21 @@ ambient-cli will look for a `.ambient` file in your projects root. In this file 
 {
   "command": "node", // The service to run your script with. Defaults to node
   "script": "core/server.js", // The location of your script relative to root
-  "root": "src" // The root of your project. Set it to the directory of your node_modules if using node.
+  "root": "src", // The root of your project. Set it to the directory of your node_modules if using node.
+  
+  // You can also predefine commands. These commands can be run using `ambient run build` or `ambient run start`
+  "commands": {
+    "build": {
+        "plainCommand": "npm run build",
+        "root": "src"
+    },
+    
+    "start": {
+        "command": "node",
+        "script": "core/server.js",
+        "root": "src"
+    }
+  }
 }
 ```
 
@@ -59,8 +73,7 @@ If you want `ambient list` to keep track of running environments that are contai
 
 ```javascript
 {
-  "command": "docker-compose up container",
-  "root": ""
+  "command": "docker-compose up container", // instead of `docker-compose up -d container`
 }
 ```
 
