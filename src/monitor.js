@@ -86,7 +86,7 @@ const monitor = {
                 args = ['node', locations.package.main || '']
             }
 
-            if (locations.ambient.logs) {
+            if (locations.ambient.logs && !logDir) {
                 if (locations.ambient.logs.substring(0, 1) == '/') {
                     logDir = locations.ambient.logs
                 } else {

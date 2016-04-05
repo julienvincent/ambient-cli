@@ -126,7 +126,9 @@ define(
         },
         command('running', "List all running environments", (name, payload) => {
             if (option('parse') === false) {
-                return monitor.list()
+                return {
+                    log: monitor.list()
+                }
             }
 
             manager.getEnvironments({
@@ -187,7 +189,7 @@ define(
 )
 
 define(
-    command('start', 'Run a server',
+    command('start', 'Start a server',
         () => {
             const start = name => {
                 const environment = manager.findEnvironment(name)
@@ -446,7 +448,7 @@ define(
 )
 
 define(
-    command('logs', 'display logs for a given process',
+    command('logs', 'Display logs for a given process',
         () => {
             const logs = name => {
                 const environment = manager.findEnvironment(name)

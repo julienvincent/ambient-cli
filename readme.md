@@ -15,14 +15,14 @@ Available commands:
   - add      Add an ambient environment to list of know environments
   - remove   Remove an environment from ambients known environments
   - update   Update an environment
-  - list     List all known environments
+  - list|ls  List all known environments
   - use      Specify a default environment
-  - start    Run a server
+  - start    Start a server
   - stop     Stop ambient servers
   - restart  Restart ambient servers
   - run      Run a command on an environments root relative root. -b, --base to run at projects real base
   - install  Install a package using npm [or --jspm]
-  - logs     display logs for a given process
+  - logs     Display logs for a given process
 
 Available flags:
 
