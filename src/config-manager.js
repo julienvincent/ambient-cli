@@ -4,6 +4,7 @@ import _ from 'lodash'
 import path from 'path'
 import { spawn } from 'child_process'
 import monitor from './monitor'
+import { option } from './core'
 
 export const configManager = () => {
     let config = {
@@ -21,40 +22,45 @@ export const configManager = () => {
         console.log(`Error attempting to read config file: ${e}`)
     }
 
-    const getEnvironmentLocations = name => {
+    const getEnvironmentLocations = (name, both) => {
+        let found = false
         const environment = typeof name == 'object' ? name : findEnvironment(name)
         const locations = {
             ambient: {},
             root: environment.path,
+            primaryRoot: environment.path,
             script: false,
             package: {}
         }
 
         try {
             locations.ambient = JSON.parse(fs.readFileSync(path.join(environment.path, '.ambient'), 'utf8'))
-            if (locations.ambient.root) {
-                locations.root = path.join(locations.root, locations.ambient.root)
-            }
-            if (locations.ambient.script) {
-                locations.script = locations.ambient.script
-            }
-            return locations
+            found = true
+        } catch (e) {
+            // ignore
+        }
+
+        try {
+            locations.package = JSON.parse(fs.readFileSync(path.join(environment.path, 'package.json'), 'utf8'))
+            found = true
         } catch (e) {
             try {
-                locations.package = JSON.parse(fs.readFileSync(path.join(environment.path, 'package.json'), 'utf8'))
-                locations.script = locations.package.main || false
-                return locations
+                locations.package = JSON.parse(fs.readFileSync(path.join(environment.path, 'src/package.json'), 'utf8'))
+                locations.package.root = path.join(environment.path, 'src')
+                found = true
             } catch (e) {
-                try {
-                    locations.package = JSON.parse(fs.readFileSync(path.join(environment.path, 'src/package.json'), 'utf8'))
-                    locations.root = path.join(locations.root, 'src')
-                    locations.script = locations.package.main || false
-                    return locations
-                } catch (e) {
-                    return false
-                }
+                // ignore
             }
         }
+
+        if (locations.ambient.root) {
+            locations.primaryRoot = path.join(locations.root, locations.ambient.root)
+        } else if (locations.package) {
+            locations.primaryRoot = path.join(locations.root, 'src')
+        }
+
+        if (!found) return false
+        return locations
     }
 
     const findEnvironment = (name, alias) => _.find(config.environments, environment => {
@@ -143,7 +149,7 @@ export const configManager = () => {
     }
 
     const addEnvironment = (env) => {
-        const { name, alias, use, path, force, update, newName } = env
+        const {name, alias, use, path, force, update, newName} = env
         const environment = findEnvironment(name, alias)
         const newEnvironment = {
             name: name,
@@ -226,21 +232,11 @@ export const configManager = () => {
         return mergeConfig(config)
     }
 
-    const runCommand = (command, name, base, noChange, cb) => {
-        try {
-            const environment = findEnvironment(name)
-            if (!environment) {
-                return interpret('ENOENV')
-            }
+    const formatCommandString = string => {
+        const commands = _.split(string, '&&')
 
-            if (base) {
-                process.chdir(environment.path)
-            } else if (!noChange) {
-                const locations = getEnvironmentLocations(name)
-                process.chdir(locations.root)
-            }
-
-            const args = _.split(command, ' ')
+        return _.map(commands, command => {
+            const args = _.filter(_.split(command, ' '), arg => arg != ' ' && arg != '')
 
             const formatted = []
             let seq = null
@@ -267,11 +263,139 @@ export const configManager = () => {
                 }
             })
 
-            const _process = spawn(formatted[0], _.without(formatted, formatted[0]), {
-                stdio: 'inherit'
-            })
-            
-            if (cb) _process.on('close', cb)
+            return formatted
+        })
+    }
+
+    const findCommand = (command, environment) => {
+        const locations = getEnvironmentLocations(environment)
+
+        let _command = {
+            args: [],
+            root: locations.primaryRoot,
+            script: null,
+            command: 'node'
+        }
+        let found = _.find(locations.ambient.commands, (opts, commandName) => command === commandName)
+        if (found) {
+            _command.args = found.args || []
+            _command.script = found.script || null
+            _command.command = found.command || 'node'
+
+            if (found.root) {
+                _command.root = path.join(environment.path, found.root)
+            }
+
+            if (found.plainCommand) {
+                const formatted = formatCommandString(found.plainCommand)
+                _command = _.map(formatted, command => ({
+                    args: _.without(command, command[0]),
+                    root: locations.primaryRoot,
+                    script: null,
+                    command: command[0]
+                }))
+            }
+        } else {
+            found = _.find(locations.package.scripts, (opts, commandName) => command === commandName)
+            if (found) {
+                const formatted = formatCommandString(found)
+                _command = _.map(formatted, command => ({
+                    command: command[0],
+                    args: _.without(command, command[0]),
+                    root: locations.package.root || locations.root
+                }))
+            }
+        }
+
+        if (found) {
+            if (Array.isArray(_command)) {
+                return _command
+            } else {
+                return [_command]
+            }
+        }
+        return false
+    }
+
+    const runCommand = (command, name, base, noChange, cb) => {
+        try {
+            const environment = findEnvironment(name)
+            if (!environment) {
+                return interpret('ENOENV')
+            }
+
+            const formatted = formatCommandString(command)
+            let relative = null
+
+            const run = (commands, i = 0, root, done) => {
+                const fullCommand = commands[i]
+                let _command = fullCommand[0]
+                let args = []
+
+                if (root) {
+                    process.chdir(root)
+                } else if (base) {
+                    process.chdir(environment.path)
+                } else if (!noChange) {
+                    const locations = getEnvironmentLocations(name)
+                    process.chdir(locations.primaryRoot)
+                }
+
+                if (_command == 'cd') {
+                    relative = fullCommand[1]
+                    if (formatted[i + 1]) {
+                        run(commands, i + 1)
+                    } else {
+                        if (cb) cb()
+                    }
+
+                    return
+                }
+
+                const preConfigured = findCommand(_command, environment)
+                if (preConfigured) {
+                    const runAll = (_commands, i = 0) => {
+                        const command = _commands[i]
+                        return run(
+                            [[command.command || 'node', ..._.filter([command.script || null, ...command.args || []], arg => arg !== null)]],
+                            0,
+                            command.root,
+                            () => {
+                                if (_commands[i + 1]) {
+                                    runAll(_commands, i + 1)
+                                } else {
+                                    if (commands[i + 1]) {
+                                        _process.on('close', () => run(commands, i + 1))
+                                    } else {
+                                        if (done) return _process.on('close', done)
+                                        if (cb) _process.on('close', cb)
+                                    }
+                                }
+                            }
+                        )
+                    }
+
+                    return runAll(preConfigured)
+                }
+
+                if (relative) {
+                    process.chdir(path.join(process.cwd(), relative))
+                    relative = null
+                }
+
+                const _process = spawn(_command, [...args, ..._.without(fullCommand, _command)], {
+                    stdio: 'inherit'
+                })
+
+                if (commands[i + 1]) {
+                    _process.on('close', () => run(commands, i + 1))
+                } else {
+                    if (done) return _process.on('close', done)
+                    if (cb) _process.on('close', cb)
+                }
+            }
+
+            run(formatted)
         } catch (e) {
             console.log(e)
         }
