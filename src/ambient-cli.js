@@ -106,13 +106,13 @@ define(
 )
 
 define(
-    command('list', 'List all known environments',
+    command('list|ls', 'List all known environments',
         () => {
             const config = {
                 format: true,
                 running: option('running')
             }
-            const logger = log(['Name', 'Alias', 'Status', 'Path'])
+            const logger = log(['\x1b[1mName', 'Alias', 'Status', 'Path'])
 
             return {
                 log: () => {
@@ -135,7 +135,41 @@ define(
                     running: true
                 }
             }, payload.logger)
-        })
+        }),
+
+        command('commands', 'List commands available for an environment',
+            () => {
+                const list = name => {
+                    const environment = manager.findEnvironment(name)
+                    if (!environment) {
+                        return manager.interpret('ENOENV')
+                    }
+
+                    const commands = manager.findCommands(environment.name)
+
+                    console.log('.ambient commands\n')
+                    _.forEach(commands.ambient, c => console.log(` - ${c}`))
+
+                    console.log('\npackage commands\n')
+                    _.forEach(commands.package, c => console.log(` - ${c}`))
+                }
+
+                return {
+                    log: () => {
+                        const env = manager.defaultEnv()
+                        console.log(`[Using ${env}]`)
+                        if (env) list(env)
+                    },
+                    payload: {
+                        list
+                    }
+                }
+            },
+
+            command(':name', 'the environment to examine',
+                (name, payload) => payload.list(name)
+            )
+        )
     )
 )
 
@@ -344,7 +378,7 @@ define(
                 }
             }
         },
-        command('i:interactive', 'Interactively run commands at an environment',
+        command('i|interactive', 'Interactively run commands at an environment',
             (name, payload) => ({
                 log: () => {
                     const env = manager.defaultEnv()
@@ -361,51 +395,22 @@ define(
             )
         ),
 
-        command(':name', 'The environment to install to',
-            (name, payload) => ({
+        command(':command', 'The environment to install to',
+            (command, payload) => ({
                 log: () => {
-                    let env = manager.findEnvironment(name)
-                    if (!env) {
-                        env = manager.defaultEnv()
+                        const env = manager.defaultEnv()
                         console.log(`[Using ${env}]`)
-                    } else {
-                        env = env.name
-                    }
-                    if (env) payload.run(env, name, option('i') || option('interactive'))
+                    if (env) payload.run(env, command, option('i') || option('interactive'))
                 },
                 payload: {
                     run: payload.run,
-                    name
+                    command
                 }
             }),
 
-            command(':command', 'The command to run',
-                (command, payload) => payload.run(payload.name, command, option('i') || option('interactive'))
+            command(':name', 'The command to run',
+                (name, payload) => payload.run(name, payload.command, option('i') || option('interactive'))
             )
-        )
-    )
-)
-
-define(
-    command('lint', 'Attempt to run "npm run lint" at an environments root',
-        () => {
-            const lint = name => manager.runCommand("npm run lint", name)
-
-            return {
-                log: () => {
-                    const env = manager.defaultEnv()
-                    console.log(`[Using ${env}]`)
-                    if (env) {
-                        lint(env)
-                    }
-                },
-                payload: {
-                    lint
-                }
-            }
-        },
-        command(':name', 'The environment to install to',
-            (name, payload) => payload.lint(name)
         )
     )
 )
@@ -414,35 +419,28 @@ define(
     command('install', 'Install a package using npm [or --jspm]',
         () => 'Please specify an environment name and a package name',
 
-        command(':name', 'The name of the environment',
-            name => {
-                const install = (packageName, name) => {
-                    const packageManager = option('jspm') ? 'jspm' : 'npm'
-                    let save = ' --save'
-                    if (option('save-dev')) save = ' --save-dev'
-                    if (option('save') === false || option('jspm')) save = ''
-                    manager.runCommand(`${packageManager} install ${packageName}${save}`, name)
+        command(':name]>:packages', 'The environment to install to and then all packages to install',
+            (command, payload, args) => {
+                const environment = manager.findEnvironment(command)
+                let name = ''
+                if (environment) {
+                    name = environment.name
+                } else {
+                    name = manager.defaultEnv()
+                    args.unshift(command)
+                    console.log(`[Using ${name}]`)
                 }
 
-                return {
-                    log: () => {
-                        const env = manager.defaultEnv()
-                        console.log(`[Using ${env}]`)
-                        if (env) {
-                            install(name, env)
-                        }
-                    },
-
-                    payload: {
-                        install,
-                        name
-                    }
+                if (!name) {
+                    return
                 }
-            },
 
-            command(':package', 'The package to install',
-                (packageName, payload) => payload.install(packageName, payload.name)
-            )
+                const packageManager = option('jspm') ? 'jspm' : 'npm'
+                let save = ' --save'
+                if (option('save-dev')) save = ' --save-dev'
+                if (option('save') === false || option('jspm')) save = ''
+                manager.runCommand(`${packageManager} install ${_.join(args, ' ')}${save}`, name)
+            }
         )
     )
 )

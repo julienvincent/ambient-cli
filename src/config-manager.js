@@ -70,7 +70,7 @@ export const configManager = () => {
 
     const formatted = environments => {
         return _.map(environments, environment => [
-            config.using == environment.name ? `[${environment.name}]` : environment.name,
+            config.using == environment.name ? `\x1b[1m\x1b[31m[\x1b[32m${environment.name}\x1b[31m]\x1b[0m` : `\x1b[0m\x1b[36m${environment.name}\x1b[0m`,
             environment.alias || '',
             environment.running ?
                 (environment.running.restarts > 0 ? `\x1b[31mFailing [${environment.running.restarts}]\x1b[0m` : '\x1b[32mrunning\x1b[0m')
@@ -229,6 +229,15 @@ export const configManager = () => {
         config.inUse = _.mapValues(config.inUse, value => value == name ? "" : value)
 
         return mergeConfig(config)
+    }
+
+    const findCommands = name => {
+        const locations = getEnvironmentLocations(name)
+        
+        return {
+            ambient: _.map(locations.ambient.commands, (command, key) => key),
+            package: _.map(locations.package.scripts, (script, key) => key)
+        }
     }
 
     const formatCommandString = string => {
@@ -416,6 +425,7 @@ export const configManager = () => {
         useEnvironment,
         defaultEnv,
         getEnvironmentLocations,
-        runCommand
+        runCommand,
+        findCommands
     }
 }

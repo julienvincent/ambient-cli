@@ -127,15 +127,28 @@ const nextCommand = (commands, index = 0) => {
             next: null
         }
     } else {
-        const command = _.find(commands, (value, key) => key == sequence[index] || key.substring(0, 1) == ':' || _.find(_.split(key, ':'), key => key == sequence[index]))
+        const command = _.find(commands, (value, key) => key == sequence[index] || key.substring(0, 1) == ':' || _.find(_.split(key, '|'), key => key == sequence[index]))
 
         if (command) {
             found.push(sequence[index])
             index++
 
+            let name = _.join(_.map(_.pickBy(commands, _command => _command == command), (_command, key) => key))
+            let args = []
+
+            if (name.indexOf(']') !== -1) {
+                for (let i = index; i < sequence.length; i++) {
+                    if (sequence[i]) {
+                        found.push(sequence[i])
+                        args.push(sequence[i])
+                    }
+                }
+            }
+
             return {
                 action: command.action.bind(this, sequence[index - 1]),
-                next: !_.isEmpty(command.commands) && sequence.length >= index + 1 ? nextCommand(command.commands, index) : null
+                next: !_.isEmpty(command.commands) && sequence.length >= index + 1 ? nextCommand(command.commands, index) : null,
+                args
             }
         } else {
             throw new Error(`Unknown command ${sequence[index]}`)
@@ -157,7 +170,7 @@ export const init = () => {
     }
 
     const run = (command, param) => {
-        const res = command.action(param)
+        const res = command.action(param, command.args)
         let payload = res,
             log = res
 
