@@ -61,7 +61,7 @@ const prompt = (label, opts, cb) => {
             labelLength += currentBranch.length + 1
 
             try {
-                const isClean = execSync('[[ -z $(git status -s) ]]')
+                execSync('[[ -z $(git status -s) ]]')
             } catch (e) {
                 formattedLabel += '\x1b[1m\x1b[33m✗\x1b[0m '
                 labelLength += 2

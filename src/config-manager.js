@@ -4,7 +4,6 @@ import _ from 'lodash'
 import path from 'path'
 import { spawn } from 'child_process'
 import monitor from './monitor'
-import { option } from './core'
 
 export const configManager = () => {
     let config = {
@@ -22,7 +21,7 @@ export const configManager = () => {
         console.log(`Error attempting to read config file: ${e}`)
     }
 
-    const getEnvironmentLocations = (name, both) => {
+    const getEnvironmentLocations = name => {
         let found = false
         const environment = typeof name == 'object' ? name : findEnvironment(name)
         const locations = {
@@ -334,8 +333,7 @@ export const configManager = () => {
 
             const run = (commands, i = 0, root, done) => {
                 const fullCommand = commands[i]
-                let _command = fullCommand[0]
-                let args = []
+                const _command = fullCommand[0]
 
                 if (root) {
                     process.chdir(root)
@@ -388,7 +386,7 @@ export const configManager = () => {
                     relative = null
                 }
 
-                const _process = spawn(_command, [...args, ..._.without(fullCommand, _command)], {
+                const _process = spawn(_command, _.without(fullCommand, _command), {
                     stdio: 'inherit'
                 })
 

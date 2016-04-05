@@ -69,7 +69,7 @@ define(
 )
 
 define(
-    command('update', 'Update an environment (TOODO)',
+    command('update', 'Update an environment',
         () => 'A name must be provided',
         command(':name', "The name of the environment ambient must remove", name => {
             let dir = process.cwd()
