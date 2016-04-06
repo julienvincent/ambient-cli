@@ -310,18 +310,17 @@ export const configManager = () => {
                 }))
             }
         } else {
-            found = _.find(locations.package.scripts, (opts, commandName) => command === commandName)
-            if (found) {
-                const formatted = formatCommandString(found)
-                _command = _.map(formatted, command => ({
-                    command: command[0],
-                    args: _.without(command, command[0]),
+            found = _.map(_.pickBy(locations.package.scripts, (opts, commandName) => command === commandName), (v, key) => key)
+            if (found && found.length) {
+                _command = {
+                    command: 'npm',
+                    args: ['run', found[0]],
                     root: locations.package.root || locations.root
-                }))
+                }
             }
         }
 
-        if (found) {
+        if (found && found.length) {
             if (Array.isArray(_command)) {
                 return _command
             } else {
@@ -377,12 +376,8 @@ export const configManager = () => {
                                 if (_commands[i + 1]) {
                                     runAll(_commands, i + 1)
                                 } else {
-                                    if (commands[i + 1]) {
-                                        _process.on('close', () => run(commands, i + 1))
-                                    } else {
-                                        if (done) return _process.on('close', done)
-                                        if (cb) _process.on('close', cb)
-                                    }
+                                    if (done) return done()
+                                    if (cb) return cb()
                                 }
                             }
                         )
