@@ -535,7 +535,8 @@ flags(
     ['--running', 'Filter by environments\' running status'],
     ['-d, --daemon', 'Start a server as a daemon'],
     ['--no-parse', 'When listing running environments, display a direct listing of running processes'],
-    ['--no-save', 'Install a module without saving it']
+    ['--no-save', 'Install a module without saving it'],
+    ['--jspm', 'Install a module using jspm instead of npm']
 )
 
 init()

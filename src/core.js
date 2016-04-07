@@ -48,7 +48,7 @@ export const option = option => {
 }
 
 export const getBareOptions = () => {
-    return _.filter(process.argv, argument => argument.substring(0, 2) == '--')
+    return _.filter(process.argv, argument => argument.substring(0, 2) == '--' && !_.find(availableFlags, flag => flag.indexOf(argument) !== -1))
 }
 
 export const define = definition => {
