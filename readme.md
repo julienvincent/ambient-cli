@@ -1,6 +1,39 @@
 # ambient-cli
 
-Cli tool for interacting with development environments from anywhere
+Cli tool for interacting with development environments from anywhere.
+
+##### Why does this exist?
+
+Lazyness. Pure and simple.
+
+##### What does it solve?
+
+`$ cd /some/dir`
+
+===
+
+On a more serious note - I wrote this cli to speed up local development a little bit. It allows you to start servers or scripts and run commands
+on a directory from wherever you are without having to navigate to the location of the project. This is especially useful if you are working on project 
+that is split up among a few directories. Yep - that's it
+
+## Installation and Usage
+
+`npm i -g ambient-cli`
+
+```
+$ ambient add my-project
+$ Added environment my-project
+
+$ ambient start my-project
+$ Starting server...
+...
+
+^C
+
+$ ambient start my-project --daemon
+$ Starting server...
+$ 
+```
 
 #### Command list
 

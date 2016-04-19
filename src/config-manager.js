@@ -297,9 +297,11 @@ export const configManager = () => {
 
             if (found.plainCommand) {
                 const formatted = formatCommandString(found.plainCommand)
-                let root = found.root
+                let root = _command.root
                 if (found.root) {
                     root = path.join(environment.path, found.root)
+                } else {
+                    root = environment.path
                 }
 
                 _command = _.map(formatted, command => ({
@@ -317,10 +319,12 @@ export const configManager = () => {
                     args: ['run', found[0]],
                     root: locations.package.root || locations.root
                 }
+            } else {
+                found = false
             }
         }
 
-        if (found && found.length) {
+        if (found) {
             if (Array.isArray(_command)) {
                 return _command
             } else {
@@ -390,6 +394,8 @@ export const configManager = () => {
                     process.chdir(path.join(process.cwd(), relative))
                     relative = null
                 }
+
+                console.log(_command, [..._.without(fullCommand, _command), ...getBareOptions()])
 
                 const _process = spawn(_command, [..._.without(fullCommand, _command), ...getBareOptions()], {
                     stdio: 'inherit'
