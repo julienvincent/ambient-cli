@@ -395,8 +395,6 @@ export const configManager = () => {
                     relative = null
                 }
 
-                console.log(_command, [..._.without(fullCommand, _command), ...getBareOptions()])
-
                 const _process = spawn(_command, [..._.without(fullCommand, _command), ...getBareOptions()], {
                     stdio: 'inherit'
                 })
