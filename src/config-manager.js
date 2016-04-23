@@ -362,6 +362,7 @@ export const configManager = () => {
                     if (formatted[i + 1]) {
                         run(commands, i + 1)
                     } else {
+                        if (done) return done()
                         if (cb) cb()
                     }
 
