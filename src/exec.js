@@ -1,4 +1,5 @@
 import { spawn } from 'child_process'
+import _ from "lodash";
 import fs from 'fs-extra'
 import os from 'os'
 
@@ -10,7 +11,7 @@ export const exec = (command, options, cb) => {
     }
     cb = cb || function() {}
 
-    const temp = `${os.homedir()}/.ambient/.temp.${command.cmd}~`
+    const temp = `${os.homedir()}/.ambient/.temp-${_.random(10000000, 99999999)}~`
     fs.writeFileSync(temp, `${command.cmd} $*`)
 
     const _process = spawn('sh', [temp, ...command.args], {

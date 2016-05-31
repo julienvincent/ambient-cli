@@ -1,5 +1,6 @@
 import { command, option } from 'cli-core'
-import { findDir, useDefault } from '../utils'
+import _ from 'lodash'
+import { findDir, useDefault, getLocationInformation } from '../utils'
 import { spawn } from '../ProcessMonitor'
 
 const run = command("run", "run a command at a location",
@@ -7,7 +8,27 @@ const run = command("run", "run a command at a location",
 
     command(":name", "name of the location",
         ({name}) => {
-            const run = ({name, root}, cmd) => {
+            const run = ({name}, cmd) => {
+
+                const locationConfig = getLocationInformation(name)
+                let root = locationConfig.root
+
+                let found = false
+                _.forEach(locationConfig.commands, (command, name) => {
+                    if (name == cmd) {
+                        cmd = command
+                    }
+                })
+
+                if (!found) {
+                    _.forEach(locationConfig.scripts, (command, name) => {
+                        if (name == cmd) {
+                            cmd = `npm run ${name}`
+                            root = locationConfig.packageRoot
+                        }
+                    })
+                }
+
                 spawn(name, {
                     cmd,
                     daemon: option('daemon') || option('d') || false,
@@ -21,7 +42,7 @@ const run = command("run", "run a command at a location",
                     useDefault(d => run(d, name))
                 },
                 payload: {
-                    location,
+                    location: name,
                     run
                 }
             }

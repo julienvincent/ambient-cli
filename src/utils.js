@@ -56,3 +56,44 @@ export const useDefault = cb => {
         console.log('No location name was specified and no location directory has been configured')
     }
 }
+
+export const getLocationInformation = name => {
+    const {root} = findDir(name)
+
+    let ambient = {}
+
+    try {
+        ambient = fs.readJsonSync(path.join(root, '.ambient.json'), {throw: false}) || {}
+    } catch (e) {
+        // ignore
+    }
+
+    let pkg = null
+    try {
+        pkg = fs.readJsonSync(path.join(root, 'package.json'), {throw: false})
+    } catch (e) {
+        // ignore
+    }
+    let packageRoot = null
+
+    if (!pkg) {
+        try {
+            pkg = fs.readJsonSync(path.join(root, 'src/package.json'), {throw: false})
+        } catch (e) {
+            // ignore
+        }
+        
+        if (!pkg) {
+            pkg = {}
+        } else {
+            packageRoot = path.join(root, 'src')
+        }
+    }
+
+    return {
+        ...ambient,
+        root: path.join(root, ambient.root || ''),
+        scripts: pkg.scripts || {},
+        packageRoot
+    }
+}
