@@ -4,12 +4,12 @@ import _ from 'lodash'
 import os from 'os'
 import { config } from '../utils'
 
-const install = command("install|i", "install a package at a directory",
+const install = command("install|i", "install a package at a location",
     () => {
 
     },
 
-    command(":name", "the name of the directory",
+    command(":name", "the name of the location",
         () => {
 
         },
@@ -22,12 +22,12 @@ const install = command("install|i", "install a package at a directory",
     )
 )
 
-const uninstall = command("uninstall", "uninstall a package at a directory",
+const uninstall = command("uninstall", "uninstall a package at a location",
     () => {
 
     },
 
-    command(":name", "the name of the directory",
+    command(":name", "the name of the location",
         () => {
 
         },

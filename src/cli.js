@@ -1,6 +1,6 @@
 import { define, flags, init, setHelpText } from 'cli-core'
 
-import { add, remove, use } from './commands/DirectoryMutating'
+import { add, remove, use } from './commands/LocationMutating'
 import { list, log } from './commands/Logging'
 import { run, interact, restart, stop } from './commands/Processes'
 import { install, uninstall } from './commands/Packages'

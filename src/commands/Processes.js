@@ -1,37 +1,38 @@
 import { command, option } from 'cli-core'
-import fs from 'fs-extra'
-import _ from 'lodash'
-import os from 'os'
-import { findDir } from '../utils'
+import { findDir, useDefault } from '../utils'
 import { spawn } from '../ProcessMonitor'
 
-const run = command("run", "run a command at a directory",
+const run = command("run", "run a command at a location",
     () => "Please provide more information",
 
-    command(":name", "name of the directory",
+    command(":name", "name of the location",
         ({name}) => {
+            const run = ({name, root}, cmd) => {
+                spawn(name, {
+                    cmd,
+                    daemon: option('daemon') || option('d') || false,
+                    cwd: root
+                })
+            }
+
             return {
                 action: () => {
-                    if (findDir(name)) return 'Please specify a command to run at this directory'
-
-
+                    if (findDir(name)) return 'Please specify a command to run at this location'
+                    useDefault(d => run(d, name))
                 },
-                payload: name
+                payload: {
+                    location,
+                    run
+                }
             }
         },
 
         command(":command", "the command to run",
-            ({name, data}) => {
-                const directory = findDir(data)
+            ({name, data: {location, run}}) => {
+                const _location = findDir(location)
 
                 return {
-                    action: () => {
-                        spawn(`${data}.${name}`, {
-                            cmd: name,
-                            daemon: option('daemon') || option('d') || false,
-                            cwd: directory.root
-                        })
-                    }
+                    action: () => run(_location, name)
                 }
             }
         )

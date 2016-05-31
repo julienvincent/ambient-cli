@@ -5,7 +5,7 @@ import path from 'path'
 
 const _dir = `${os.homedir()}/.ambient`
 export let config = {
-    directories: [],
+    locations: [],
     using: null
 }
 
@@ -29,16 +29,16 @@ const update = () => {
     }
 }
 
-export const findDir = (name, alias) => _.find(config.directories, directory => {
+export const findDir = (name, alias) => _.find(config.locations, location => {
     name = name || null
     alias = alias || null
-    return directory.name === name || directory.name === alias || directory.alias === name || directory.alias === alias
+    return location.name === name || location.name === alias || location.alias === name || location.alias === alias
 })
 
-export const findDefault = () => _.find(config.directories, directory => directory.name == config.using)
+export const findDefault = () => _.find(config.locations, location => location.name == config.using)
 
-export const add = directory => {
-    config.environments.push(directory)
+export const add = location => {
+    config.locations.push(location)
     update()
 }
 
@@ -47,12 +47,12 @@ export const use = name => {
     update()
 }
 
-export const useDefault = (func, ...params) => {
-    const directory = findDefault()
-    if (directory) {
-        console.log(`[Using ${directory.name}]`)
-        func(directory.name, ...params)
+export const useDefault = cb => {
+    const location = findDefault()
+    if (location) {
+        console.log(`[Using ${location.name}]\n`)
+        cb(location)
     } else {
-        console.log('No directory name was specified and no default directory has been configured')
+        console.log('No location name was specified and no location directory has been configured')
     }
 }
