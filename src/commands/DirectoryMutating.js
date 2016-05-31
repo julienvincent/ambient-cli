@@ -2,7 +2,7 @@ import { command, option } from 'cli-core'
 import fs from 'fs-extra'
 import _ from 'lodash'
 import os from 'os'
-import {add as addDir, findDir, use as useDir, config} from '../config'
+import {add as addDir, findDir, use as useDir, config} from '../utils'
 
 const add = command("add", "add a directory",
     () => 'A name must be provided',
@@ -12,7 +12,7 @@ const add = command("add", "add a directory",
         const alias = option('alias') || option('a') || ''
         const logDir = option('logs')
 
-        if (name == 'all') return 'All is a reserved name. Please use something else.'
+        if (name.toLowerCase() == 'all') return '[All] is a reserved name. Please use something else.'
 
         try {
             const stats = fs.lstatSync(dir);

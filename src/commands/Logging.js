@@ -1,7 +1,7 @@
 import { command, option } from 'cli-core'
 import _ from 'lodash'
 import os from 'os'
-import { config } from '../config'
+import { config } from '../utils'
 
 import Table from 'cli-table'
 const table = new Table({

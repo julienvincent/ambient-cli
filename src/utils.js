@@ -29,11 +29,13 @@ const update = () => {
     }
 }
 
-export const findDir = (name, alias) => _.find(config.environments, directory => {
+export const findDir = (name, alias) => _.find(config.directories, directory => {
     name = name || null
     alias = alias || null
     return directory.name === name || directory.name === alias || directory.alias === name || directory.alias === alias
 })
+
+export const findDefault = () => _.find(config.directories, directory => directory.name == config.using)
 
 export const add = directory => {
     config.environments.push(directory)
@@ -43,4 +45,14 @@ export const add = directory => {
 export const use = name => {
     config.using = name
     update()
+}
+
+export const useDefault = (func, ...params) => {
+    const directory = findDefault()
+    if (directory) {
+        console.log(`[Using ${directory.name}]`)
+        func(directory.name, ...params)
+    } else {
+        console.log('No directory name was specified and no default directory has been configured')
+    }
 }
