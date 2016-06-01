@@ -1,7 +1,7 @@
 import { command, option } from 'cli-core'
 import _ from 'lodash'
 import { findDir, useDefault, getLocationInformation } from '../utils'
-import { spawn } from '../ProcessMonitor'
+import { spawn, stop as stopProcess } from '../ProcessMonitor'
 
 const run = command("run", "run a command at a location",
     () => "Please provide more information",
@@ -75,23 +75,24 @@ const interact = command("interact", "interactively run commands at a directory"
 const stop = command("stop", "stop a daemonized process",
     () => {
 
+        return {
+            action: () => useDefault(d => stopProcess({name: d.name}))
+        }
     },
 
     command(":name", "name of the directory it belongs to",
-        () => {
+        ({name}) => {
+            const location = findDir(name)
 
-        },
-
-        command(":command", "the command that is running",
-            () => {
-
-            }
-        )
+            if (location) return stopProcess({name: location.name})
+            return stopProcess({pid: name})
+        }
     )
 )
 
 const restart = command("restart", "restart a daemonized process",
     () => {
+
 
     },
 

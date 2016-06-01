@@ -2,23 +2,23 @@ import { spawn } from 'child_process'
 import _ from "lodash";
 import fs from 'fs-extra'
 import os from 'os'
+import path from 'path'
 
-export const exec = (command, options, cb) => {
+export const exec = (command, options) => {
     command = {
-        cmd: '',
+        cmd: 'echo nothing to do',
         args: [],
         ...command || {}
     }
-    cb = cb || function() {}
 
-    const temp = `${os.homedir()}/.ambient/.temp-${_.random(10000000, 99999999)}~`
+    const temp = `${os.homedir()}/.ambient/tmp/.temp-${_.random(10000000, 99999999)}~`
+    fs.ensureFileSync(temp)
     fs.writeFileSync(temp, `${command.cmd} $*`)
 
-    const _process = spawn('sh', [temp, ...command.args], {
-        stdio: 'inherit',
-        ...options
-    })
+    spawn('sh', [temp, ...command.args], options)
+}
 
-    _process.on('close', cb)
-    return _process
+export const execAndWatch = conf => {
+    const _process = spawn('node', [path.join(__dirname, 'watcher.js'), JSON.stringify(conf)], {stdio: 'ignore', detached: true})
+    _process.unref()
 }

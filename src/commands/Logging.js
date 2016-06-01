@@ -46,19 +46,21 @@ const list = command("list|ls", "list all locations",
 
     command("running", "List all running processes",
         () => {
-            const table = getTable(["\x1b[1mDirectory", "Cmd", "PID", "Logs", "State", "Attempts\x1b[0m"])
+            const table = getTable(["\x1b[1mLocation", "Cmd", "Watcher PID", "Process PID", "Logs", "State", "Attempt", "Max\x1b[0m"])
 
-            const data = _.map(listRunning(), ({name, cmd, pid, logFile, failing, onAttempt}) => [
+            const data = _.map(listRunning(), ({name, cmd, pid,childPid, logFile, failing, onAttempt, maxAttempts, didExit}) => [
                 name.split(".")[0],
                 cmd,
                 pid,
+                childPid,
                 logFile,
-                failing ? 'Failing' : 'Running',
-                onAttempt
+                !didExit && onAttempt > 1 ? '\x1b[31mFailing\x1b[0m' : '\x1b[32mRunning\x1b[0m',
+                onAttempt,
+                maxAttempts
             ])
 
             table.push(...data)
-            return table.toString()
+            return `${table.toString()}${!data.length ? "\nNo running processes" : ""}`
         }
     )
 )
